@@ -1,11 +1,40 @@
 spring:
   application:
     name: uoc-study-planner
+  datasource:
+    url: ${PLANNER_DB_URL}
+    username: ${PLANNER_DB_USER}
+    password: ${PLANNER_DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  flyway:
+    clean-disabled: true
 
 server:
   address: 127.0.0.1
   port: 8080
+
+---
+# Local development against the PostgreSQL of docker-compose.yml (make up).
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: ${PLANNER_DB_URL:jdbc:postgresql://127.0.0.1:5432/planner}
+    username: ${PLANNER_DB_USER:planner}
+
+---
+# Tests: the database comes from Testcontainers (@ServiceConnection).
+spring:
+  config:
+    activate:
+      on-profile: test
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    org.testcontainers: warn
