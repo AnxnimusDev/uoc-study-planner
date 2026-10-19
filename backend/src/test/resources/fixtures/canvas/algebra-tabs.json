@@ -1,0 +1,76 @@
+[
+  {
+    "id": "home",
+    "html_url": "/courses/94063",
+    "full_url": "https://aula.uoc.edu/courses/94063",
+    "position": 1,
+    "visibility": "public",
+    "label": "Inici",
+    "type": "internal"
+  },
+  {
+    "id": "context_external_tool_8881",
+    "html_url": "/courses/94063/external_tools/8881",
+    "full_url": "https://aula.uoc.edu/courses/94063/external_tools/8881",
+    "position": 2,
+    "visibility": "public",
+    "label": "Pla docent",
+    "type": "external",
+    "url": "https://aula.uoc.edu/api/v1/courses/94063/external_tools/sessionless_launch?id=8881&launch_type=course_navigation"
+  },
+  {
+    "id": "announcements",
+    "html_url": "/courses/94063/announcements",
+    "full_url": "https://aula.uoc.edu/courses/94063/announcements",
+    "position": 3,
+    "visibility": "public",
+    "label": "Anuncis",
+    "type": "internal"
+  },
+  {
+    "id": "modules",
+    "html_url": "/courses/94063/modules",
+    "full_url": "https://aula.uoc.edu/courses/94063/modules",
+    "position": 4,
+    "visibility": "public",
+    "label": "Continguts",
+    "type": "internal"
+  },
+  {
+    "id": "discussions",
+    "html_url": "/courses/94063/discussion_topics",
+    "full_url": "https://aula.uoc.edu/courses/94063/discussion_topics",
+    "position": 5,
+    "visibility": "public",
+    "label": "Fòrums",
+    "type": "internal"
+  },
+  {
+    "id": "grades",
+    "html_url": "/courses/94063/grades",
+    "full_url": "https://aula.uoc.edu/courses/94063/grades",
+    "position": 6,
+    "visibility": "public",
+    "label": "Notes",
+    "type": "internal"
+  },
+  {
+    "id": "people",
+    "html_url": "/courses/94063/users",
+    "full_url": "https://aula.uoc.edu/courses/94063/users",
+    "position": 7,
+    "visibility": "public",
+    "label": "Persones",
+    "type": "internal"
+  },
+  {
+    "id": "context_external_tool_13574",
+    "html_url": "/courses/94063/external_tools/13574?display=borderless",
+    "full_url": "https://aula.uoc.edu/courses/94063/external_tools/13574?display=borderless",
+    "position": 8,
+    "visibility": "public",
+    "label": "Biblioteca",
+    "type": "external",
+    "url": "https://aula.uoc.edu/api/v1/courses/94063/external_tools/sessionless_launch?id=13574&launch_type=course_navigation"
+  }
+]

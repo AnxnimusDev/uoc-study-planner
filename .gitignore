@@ -1,0 +1,31 @@
+# Secretos y datos locales
+.env
+.env.*
+!.env.example
+data/
+*.cookie
+playwright/.auth/
+config/availability.yml
+backend/src/test/resources/fixtures/raw/
+
+# Java / Maven
+backend/target/
+*.class
+*.log
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Swift
+reminders-bridge/.build/
+reminders-bridge/.swiftpm/
+
+# IDE y sistema
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Claude Code (ajustes personales)
+.claude/settings.local.json

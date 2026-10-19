@@ -1,0 +1,16 @@
+{
+  "id": 1,
+  "name": "Alumne Exemple",
+  "created_at": "2025-11-19T03:45:42Z",
+  "sortable_name": "Exemple, Alumne",
+  "short_name": "Alumne Exemple",
+  "last_name": "Exemple",
+  "first_name": "Alumne",
+  "locale": "ca",
+  "effective_locale": "ca",
+  "permissions": {
+    "can_update_name": false,
+    "can_update_avatar": true,
+    "limit_parent_app_web_access": false
+  }
+}

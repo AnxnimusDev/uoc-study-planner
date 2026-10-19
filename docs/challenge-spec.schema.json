@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AnxnimusDev/uoc-study-planner/docs/challenge-spec.schema.json",
+  "title": "ChallengeSpec",
+  "description": "Requisitos extraídos de un enunciado de reto de la UOC. Nunca contiene soluciones ni contenido de la entrega (ADR 0003).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "challengeTitle", "language", "summary", "deliverables", "tasks", "aiPolicy", "warnings", "confidence"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "challengeTitle": { "type": "string", "minLength": 1 },
+    "language": { "type": "string", "enum": ["ca", "es", "en"] },
+    "summary": { "type": "string", "maxLength": 300 },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "type"],
+        "properties": {
+          "ref": { "type": "string", "pattern": "^(assignment|discussion):[0-9]+$" },
+          "type": { "enum": ["DOCUMENT", "QUIZ", "CODE", "VIDEO", "FORUM", "PROTOTYPE", "OTHER"] },
+          "format": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fileType": { "type": "string" },
+              "compressed": { "type": "boolean" },
+              "maxPages": { "type": "integer", "minimum": 1 },
+              "maxMinutes": { "type": "number", "minimum": 0 }
+            }
+          },
+          "formatRequirements": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "estimatedHours", "kind", "dependsOn"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^t[0-9a-z]+$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "unit": { "type": "string" },
+          "estimatedHours": { "type": "number", "exclusiveMinimum": 0, "maximum": 3 },
+          "estimationBasis": { "type": "string" },
+          "deliverableRef": { "type": "string", "pattern": "^(assignment|discussion):[0-9]+$" },
+          "dependsOn": { "type": "array", "items": { "type": "string" } },
+          "minDaysAfterDependency": { "type": "integer", "minimum": 0 },
+          "kind": { "enum": ["WORK", "READING", "QUIZ", "FORUM_POST", "FORUM_REPLY", "VIDEO_RECORDING", "REVIEW", "SUBMISSION"] }
+        }
+      }
+    },
+    "aiPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level"],
+      "properties": {
+        "level": { "enum": ["FORBIDDEN", "LIMITED", "ALLOWED", "NOT_STATED"] },
+        "allowedUses": { "type": "array", "items": { "type": "string" } },
+        "citationRequired": { "type": "boolean" },
+        "evidence": { "type": "string" }
+      }
+    },
+    "assessmentCriteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterion", "source"],
+        "properties": {
+          "criterion": { "type": "string" },
+          "weightPct": { "type": "number", "minimum": 0, "maximum": 100 },
+          "source": { "enum": ["STATEMENT", "RUBRIC", "STUDY_GUIDE"] }
+        }
+      }
+    },
+    "externalResources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "url", "kind"],
+        "properties": {
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "kind": { "enum": ["CANVAS_FILE", "UOC_PUBLIC", "EXTERNAL", "STALE_LINK"] }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

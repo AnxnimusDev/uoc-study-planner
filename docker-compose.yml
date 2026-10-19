@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: uoc-planner-db
+    environment:
+      POSTGRES_DB: planner
+      POSTGRES_USER: ${PLANNER_DB_USER:-planner}
+      POSTGRES_PASSWORD: ${PLANNER_DB_PASSWORD:?Define PLANNER_DB_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PLANNER_DB_USER:-planner} -d planner"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
