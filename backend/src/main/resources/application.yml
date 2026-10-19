@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: uoc-study-planner
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+server:
+  address: 127.0.0.1
+  port: 8080
