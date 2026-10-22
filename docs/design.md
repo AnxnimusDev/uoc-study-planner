@@ -90,7 +90,7 @@ Consumidores: app de calendario (feed .ics), Recordatorios (EventKit)
 | --- | --- | --- |
 | `auth` | Login interactivo, captura y renovación de cookie, cifrado | Playwright for Java |
 | `canvas` | Cliente de la API, sync incremental, normalización | WebClient + Resilience4j |
-| `extraction` | Enunciado HTML → `ChallengeSpec` JSON validado | Spring AI (Anthropic), Jsoup |
+| `extraction` | Enunciado HTML → `ChallengeSpec` JSON validado | SDK oficial de Anthropic para Java, Jsoup |
 | `availability` | Perfil semanal, excepciones, check-ins → franjas libres | Dominio puro |
 | `planning` | Subtareas + franjas + plazos → plan | Voraz (MVP), Timefold (fase 2) |
 | `scheduling` | Sync periódica, check-ins, regeneración | `@Scheduled` |
@@ -151,9 +151,9 @@ Convierte el HTML de un enunciado en un `ChallengeSpec` JSON validado (`docs/cha
 
 1. Limpieza con Jsoup (sin estilos; conserva encabezados, listas, tablas, negritas, enlaces).
 2. Contexto: planteamiento, GES, rúbrica y fechas de las entregas del módulo.
-3. Llamada a Claude con salida estructurada, temperatura 0.
+3. Llamada a Claude (SDK oficial de Java, `claude-opus-5-5`, esfuerzo `medium`) con salida estructurada. Sin temperatura: el modelo no la admite (ADR 0006).
 4. Validación: JSON Schema + reglas (horas > 0, `deliverableRef` existente, total razonable).
-5. Un reintento con los errores; si falla → `NEEDS_REVIEW` y edición manual.
+5. Un reintento con los errores, en una petición nueva; si falla, o si el modelo se niega → `NEEDS_REVIEW` y edición manual.
 6. Las correcciones del alumno prevalecen en futuras re-extracciones.
 
 Enumerados: `tasks[].kind` = WORK, READING, QUIZ, FORUM_POST, FORUM_REPLY, VIDEO_RECORDING, REVIEW, SUBMISSION · `deliverables[].type` = DOCUMENT, QUIZ, CODE, VIDEO, FORUM, PROTOTYPE, OTHER · `aiPolicy.level` = FORBIDDEN, LIMITED, ALLOWED, NOT_STATED · `externalResources[].kind` = CANVAS_FILE, UOC_PUBLIC, EXTERNAL, STALE_LINK.
@@ -229,7 +229,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 
 ## 11. Stack y repositorio
 
-Java 21 (Temurin), Spring Boot 3.x + Spring Modulith, WebClient + Resilience4j, Playwright for Java, Spring AI (Anthropic), Jsoup, Timefold (fase 2), PostgreSQL 16 + JPA + Flyway, ical4j, Thymeleaf, OpenHTMLtoPDF, Spring Mail, Swift 6 + EventKit (macOS 14+), React 19 + TypeScript + Vite + Tailwind + TanStack Query, JUnit 5, AssertJ, Mockito, Testcontainers, WireMock, ArchUnit, Spotless, JaCoCo, GitHub Actions, Docker Compose. Versiones exactas: la última estable al crear el proyecto.
+Java 21 (Temurin), Spring Boot 3.x + Spring Modulith, WebClient + Resilience4j, Playwright for Java, SDK de Anthropic para Java, Jsoup, Timefold (fase 2), PostgreSQL 16 + JPA + Flyway, ical4j, Thymeleaf, OpenHTMLtoPDF, Spring Mail, Swift 6 + EventKit (macOS 14+), React 19 + TypeScript + Vite + Tailwind + TanStack Query, JUnit 5, AssertJ, Mockito, Testcontainers, WireMock, ArchUnit, Spotless, JaCoCo, GitHub Actions, Docker Compose. Versiones exactas: la última estable al crear el proyecto.
 
 Estructura: `backend/` (paquetes por módulo en `edu.uoc.planner`), `frontend/`, `reminders-bridge/`, `docs/`, `scripts/`, `config/`.
 

@@ -16,7 +16,7 @@ Si `pom.xml` todavía no existe, créalo con:
 - Plugins: `spotless-maven-plugin` (google-java-format), `jacoco-maven-plugin`.
 
 Añade más adelante, cuando el módulo los necesite (no antes): `com.microsoft.playwright:playwright` (auth),
-`spring-ai` con Anthropic (extraction), `org.mnode.ical4j:ical4j` y `com.openhtmltopdf` (output),
+`com.anthropic:anthropic-java` (extraction, ADR 0006), `org.mnode.ical4j:ical4j` y `com.openhtmltopdf` (output),
 `ai.timefold.solver` (planning, fase 2).
 
 Comprueba la última versión estable de cada dependencia antes de fijarla.
