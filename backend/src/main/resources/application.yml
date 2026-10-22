@@ -16,6 +16,10 @@ server:
   address: 127.0.0.1
   port: 8080
 
+planner:
+  # AES-256-GCM key for the session cookie and settings: openssl rand -base64 32
+  secret-key: ${PLANNER_SECRET_KEY:}
+
 ---
 # Local development against the PostgreSQL of docker-compose.yml (make up).
 spring:
@@ -34,6 +38,10 @@ spring:
       on-profile: test
   main:
     banner-mode: off
+
+planner:
+  # Test-only key (32 zero bytes). Never used outside tests.
+  secret-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
 logging:
   level:
