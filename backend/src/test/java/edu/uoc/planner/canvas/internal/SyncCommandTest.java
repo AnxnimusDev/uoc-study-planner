@@ -1,72 +1,53 @@
 package edu.uoc.planner.canvas.internal;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import edu.uoc.planner.Fixtures;
+import edu.uoc.planner.canvas.CanvasSessionExpiredException;
+import edu.uoc.planner.canvas.CanvasSync;
+import edu.uoc.planner.canvas.CanvasUnavailableException;
+import edu.uoc.planner.canvas.SyncReport;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Optional;
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.util.unit.DataSize;
-import org.springframework.web.reactive.function.client.WebClient;
 
 class SyncCommandTest {
 
-  @RegisterExtension
-  static WireMockExtension canvas =
-      WireMockExtension.newInstance().options(wireMockConfig().dynamicPort()).build();
-
-  private static final String JSON = "application/json; charset=utf-8";
-
+  private final CanvasSync sync = mock(CanvasSync.class);
   private final ByteArrayOutputStream output = new ByteArrayOutputStream();
-  private Optional<String> cookie = Optional.of("canvas_session=abc");
 
   @Test
-  void listsTheCoursesOfTheCurrentTerm() {
-    canvas.stubFor(
-        get(urlPathEqualTo("/api/v1/users/self"))
-            .willReturn(okForContentType(JSON, Fixtures.json("canvas/users-self.json"))));
-    canvas.stubFor(
-        get(urlPathEqualTo("/api/v1/courses"))
-            .willReturn(okForContentType(JSON, Fixtures.json("canvas/courses.json"))));
+  void summarizesEachSyncedCourse() {
+    when(sync.sync())
+        .thenReturn(
+            new SyncReport(
+                List.of(
+                    new SyncReport.CourseSync(
+                        94063,
+                        "05.557 - Àlgebra - Aula 2",
+                        5,
+                        17,
+                        3,
+                        1,
+                        List.of("ges-guies-destudi-setmanal-r1"),
+                        List.of()))));
 
     SyncCommand command = command();
     command.run(null);
 
     assertThat(command.getExitCode()).isZero();
     assertThat(output())
-        .contains("05.557 - Àlgebra - Aula 2", "05.590 - Interacció persona ordinador - Aula 2")
-        .contains("6 asignaturas")
-        .doesNotContain("Tutoria");
-  }
-
-  @Test
-  void asksToLogInWhenThereIsNoSession() {
-    cookie = Optional.empty();
-
-    SyncCommand command = command();
-    command.run(null);
-
-    assertThat(command.getExitCode()).isEqualTo(1);
-    assertThat(output()).contains("make login");
+        .contains("1 asignaturas sincronizadas")
+        .contains("05.557 - Àlgebra - Aula 2: 5 retos, 17 entregas, 1 páginas nuevas o cambiadas")
+        .contains("páginas no disponibles: ges-guies-destudi-setmanal-r1");
   }
 
   @Test
   void asksToLogInWhenTheSessionExpired() {
-    canvas.stubFor(get(anyUrl()).willReturn(aResponse().withStatus(401)));
+    when(sync.sync()).thenThrow(new CanvasSessionExpiredException("401"));
 
     SyncCommand command = command();
     command.run(null);
@@ -75,24 +56,19 @@ class SyncCommandTest {
     assertThat(output()).contains("make login");
   }
 
+  @Test
+  void explainsWhenCanvasIsDown() {
+    when(sync.sync()).thenThrow(new CanvasUnavailableException("Canvas error: 503"));
+
+    SyncCommand command = command();
+    command.run(null);
+
+    assertThat(command.getExitCode()).isEqualTo(1);
+    assertThat(output()).contains("No se ha podido leer el aula", "503");
+  }
+
   private SyncCommand command() {
-    CanvasProperties properties =
-        new CanvasProperties(
-            URI.create(canvas.baseUrl()),
-            100,
-            1,
-            Duration.ofMillis(10),
-            Duration.ofSeconds(5),
-            DataSize.ofMegabytes(10));
-    CanvasClient client =
-        new CanvasClient(
-            CanvasWebClient.create(WebClient.builder(), properties),
-            properties,
-            () -> cookie,
-            event -> {},
-            Jackson2ObjectMapperBuilder.json().build(),
-            Clock.systemUTC());
-    return new SyncCommand(client, new PrintStream(output, true, StandardCharsets.UTF_8));
+    return new SyncCommand(sync, new PrintStream(output, true, StandardCharsets.UTF_8));
   }
 
   private String output() {

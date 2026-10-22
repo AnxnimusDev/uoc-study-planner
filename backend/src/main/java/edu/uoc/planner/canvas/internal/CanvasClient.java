@@ -142,6 +142,16 @@ public final class CanvasClient {
     return getAll(uri("/api/v1/courses/{course}/assignments"), CanvasAssignment.class, courseId);
   }
 
+  /** One assignment: for those a module links to but the course list did not return. */
+  public CanvasAssignment assignment(long courseId, long assignmentId) {
+    return getOne(
+        uri("/api/v1/courses/{course}/assignments/{assignment}")
+            .encode()
+            .buildAndExpand(courseId, assignmentId)
+            .toUri(),
+        CanvasAssignment.class);
+  }
+
   public List<CanvasAssignmentGroup> assignmentGroups(long courseId) {
     return getAll(
         uri("/api/v1/courses/{course}/assignment_groups"), CanvasAssignmentGroup.class, courseId);
