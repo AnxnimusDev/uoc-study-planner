@@ -212,7 +212,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 
 | Tabla | Columnas clave |
 | --- | --- |
-| `course` | `canvas_id` PK, `code`, `name`, `term_id`, `ics_url`, `selected`, `margin_days` |
+| `course` | `canvas_id` PK, `code`, `name`, `term_id`, `ics_url`, `selected`, `margin_days`, `start_at` (V5) |
 | `challenge` | `id`, `course_id`, `canvas_module_id`, `position`, `name`, `weight_pct`, `status` (SYNCED, EXTRACTED, NEEDS_REVIEW, AT_RISK, DONE) |
 | `canvas_page` | `course_id`, `page_url`, `title`, `role`, `body_html`, `body_hash`, `updated_at` |
 | `deliverable` | `canvas_assignment_id` PK, `challenge_id`, `name`, `unlock_at`, `due_at`, `lock_at`, `points`, `counts_for_grade`, `submission_types`, `rubric_json` |
@@ -220,6 +220,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 | `task` | `id`, `challenge_id`, `spec_task_id`, `title`, `kind`, `estimated_hours`, `soft_deadline`, `hard_deadline`, `depends_on` |
 | `study_session` | `id`, `task_id`, `starts_at`, `ends_at`, `plan_version`, `state` (PLANNED, DONE, SKIPPED) |
 | `plan_version` | `id`, `created_at`, `trigger` (SYNC, CHECKIN, MANUAL), `unscheduled_hours` |
+| `plan_notice` (V5) | `plan_version`, `task_id`, `type` (VIDEO_WINDOW, MARGIN_SKIPPED), `starts_at`, `ends_at`, `message` |
 | `availability_block` | `id`, `day_of_week`, `start_time`, `end_time`, `type`, `label` |
 | `availability_override` | `id`, `date`, `start_time`, `end_time`, `effect` (BUSY, FREE, OFFICE_DAY) |
 | `checkin` | `id`, `kind` (WEEKLY, MONTHLY), `period_start`, `answers_json`, `answered_at` |

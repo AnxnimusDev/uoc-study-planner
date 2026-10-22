@@ -52,7 +52,10 @@ final class CanvasNormalizer {
             .getKey();
     return courses.stream()
         .filter(c -> Objects.equals(c.enrollmentTermId(), currentTerm))
-        .map(c -> new Course(c.id(), c.courseCode(), c.name().strip(), currentTerm, c.uuid()))
+        .map(
+            c ->
+                new Course(
+                    c.id(), c.courseCode(), c.name().strip(), currentTerm, c.uuid(), c.startAt()))
         .toList();
   }
 

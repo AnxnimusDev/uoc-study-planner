@@ -46,7 +46,8 @@ class MigrationTest {
             "checkin",
             "external_ref",
             "user_settings",
-            "session_secret");
+            "session_secret",
+            "plan_notice");
   }
 
   @Test
