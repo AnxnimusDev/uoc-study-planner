@@ -5,6 +5,15 @@ spring:
     url: ${PLANNER_DB_URL}
     username: ${PLANNER_DB_USER}
     password: ${PLANNER_DB_PASSWORD}
+  mail:
+    # The student's own SMTP (Gmail: app password). Weekly email only.
+    host: ${PLANNER_SMTP_HOST:}
+    port: ${PLANNER_SMTP_PORT:587}
+    username: ${PLANNER_SMTP_USER:}
+    password: ${PLANNER_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
   jpa:
     open-in-view: false
     hibernate:
@@ -22,6 +31,10 @@ planner:
   extraction:
     # Claude API key; without it extraction is disabled and the rest still works (ADR 0006).
     api-key: ${ANTHROPIC_API_KEY:}
+  output:
+    mail-from: ${PLANNER_MAIL_FROM:${PLANNER_SMTP_USER:}}
+    # UOC and personal address, comma separated
+    mail-to: ${PLANNER_MAIL_TO:}
 
 ---
 # Local development against the PostgreSQL of docker-compose.yml (make up).
