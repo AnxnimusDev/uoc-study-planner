@@ -127,6 +127,17 @@ class CanvasClientTest {
   }
 
   @Test
+  void readsASingleAssignment() throws Exception {
+    JsonNode quiz = mapper.readTree(Fixtures.json("canvas/algebra-assignments.json")).get(7);
+    stubJson("/api/v1/courses/94063/assignments/" + quiz.get("id").asLong(), quiz.toString());
+
+    CanvasAssignment assignment = client.assignment(94063, quiz.get("id").asLong());
+
+    assertThat(assignment.id()).isEqualTo(quiz.get("id").asLong());
+    assertThat(assignment.name()).isEqualTo(quiz.get("name").asText());
+  }
+
+  @Test
   void followsNextLinksUntilTheLastPage() throws Exception {
     ArrayNode all = (ArrayNode) mapper.readTree(Fixtures.json("canvas/algebra-assignments.json"));
     String path = "/api/v1/courses/94063/assignments";
