@@ -30,6 +30,8 @@
     <playwright.version>1.64.0</playwright.version>
     <anthropic-java.version>2.75.0</anthropic-java.version>
     <json-schema-validator.version>2.0.8</json-schema-validator.version>
+    <ical4j.version>4.4.0</ical4j.version>
+    <openhtmltopdf.version>1.1.97</openhtmltopdf.version>
     <!-- Tests left out of mvn verify: real Claude API (live) and real Chromium (browser). -->
     <surefire.excludedGroups>live,browser</surefire.excludedGroups>
   </properties>
@@ -115,6 +117,18 @@
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
       <version>${json-schema-validator.version}</version>
+    </dependency>
+    <!-- Calendar feed and weekly PDF (output). -->
+    <dependency>
+      <groupId>org.mnode.ical4j</groupId>
+      <artifactId>ical4j</artifactId>
+      <version>${ical4j.version}</version>
+    </dependency>
+    <!-- Maintained continuation of com.openhtmltopdf, abandoned since 2021. -->
+    <dependency>
+      <groupId>io.github.openhtmltopdf</groupId>
+      <artifactId>openhtmltopdf-pdfbox</artifactId>
+      <version>${openhtmltopdf.version}</version>
     </dependency>
     <!-- Interactive UOC login (auth, ADR 0002). -->
     <dependency>

@@ -7,7 +7,7 @@ export
 RAW_DIR := backend/src/test/resources/fixtures/raw
 FIXTURE_DIR := backend/src/test/resources/fixtures/canvas
 
-.PHONY: help up down test run login sync fixtures format
+.PHONY: help up down test run login sync feed fixtures format
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -29,6 +29,9 @@ login: up ## Abre el navegador para iniciar sesión en la UOC y guarda la cookie
 
 sync: up ## Sincroniza Canvas con la sesión guardada
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=sync
+
+feed: up ## Muestra las URL de los calendarios para suscribirte
+	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=feed-url
 
 fixtures: ## Anonimiza todos los JSON crudos de fixtures/raw en fixtures/canvas
 	@mkdir -p $(FIXTURE_DIR)
