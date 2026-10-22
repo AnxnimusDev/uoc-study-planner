@@ -25,7 +25,10 @@ ir por un puerto o por un evento.
 3. Al recibir un 401, `CanvasClient` publica `CanvasSessionExpiredEvent` con
    `ApplicationEventPublisher`, lanza `CanvasSessionExpiredException` y no reintenta.
 4. `auth` implementa `CanvasSessionProvider` (lee `session_secret` y lo descifra) y escucha el evento
-   con `@ApplicationModuleListener` para actualizar `last_valid_at` y marcar la sesión como caducada.
+   con un `@EventListener` síncrono que rellena `expired_at` (migración V2).
+   *Corrección (2026-10-22):* la versión inicial decía `@ApplicationModuleListener`, pero es un
+   listener transaccional y `CanvasClient` publica fuera de una transacción, así que nunca se
+   dispararía. El síncrono, además, deja la sesión marcada antes de que la sync reciba la excepción.
 5. Dependencia permitida: `auth → canvas`. `canvas` no importa nada de `auth`, y
    `ApplicationModules.verify()` lo comprueba en CI.
 6. Mientras `auth` no exista (hasta el punto 3 de la fase 1), los tests de `canvas` usan un proveedor

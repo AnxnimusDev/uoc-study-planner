@@ -27,6 +27,9 @@
     <spotless.version>3.10.4</spotless.version>
     <google-java-format.version>1.36.1</google-java-format.version>
     <jacoco.version>0.8.15</jacoco.version>
+    <playwright.version>1.64.0</playwright.version>
+    <!-- Tests left out of mvn verify: real Claude API (live) and real Chromium (browser). -->
+    <surefire.excludedGroups>live,browser</surefire.excludedGroups>
   </properties>
 
   <dependencyManagement>
@@ -100,6 +103,12 @@
       <artifactId>jsoup</artifactId>
       <version>${jsoup.version}</version>
     </dependency>
+    <!-- Interactive UOC login (auth, ADR 0002). -->
+    <dependency>
+      <groupId>com.microsoft.playwright</groupId>
+      <artifactId>playwright</artifactId>
+      <version>${playwright.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -151,8 +160,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- Los tests contra la API real de Claude se ejecutan a mano. -->
-          <excludedGroups>live</excludedGroups>
+          <excludedGroups>${surefire.excludedGroups}</excludedGroups>
         </configuration>
       </plugin>
 

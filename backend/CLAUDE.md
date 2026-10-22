@@ -67,6 +67,8 @@ Dentro de cada módulo: clases públicas en la raíz del paquete (API del módul
 - Perfil `live-ai` desactivado por defecto: los tests que llaman a la API real de Claude llevan
   `@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")` y `@Tag("live")`, y se
   excluyen de `mvn verify`.
+- Tests con Chromium real (Playwright contra WireMock) llevan `@Tag("browser")` y también quedan fuera de
+  `mvn verify`. Se lanzan con `./mvnw test -Dgroups=browser -Dsurefire.excludedGroups=`.
 
 ## Configuración
 

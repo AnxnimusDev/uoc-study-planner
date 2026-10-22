@@ -24,10 +24,10 @@ test: ## Ejecuta todos los tests del backend
 run: up ## Arranca el backend en local (perfil dev)
 	cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 
-login: ## Abre el navegador para iniciar sesión en la UOC y guarda la cookie cifrada
+login: up ## Abre el navegador para iniciar sesión en la UOC y guarda la cookie cifrada
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=login
 
-sync: ## Sincroniza Canvas con la sesión guardada
+sync: up ## Sincroniza Canvas con la sesión guardada
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=sync
 
 fixtures: ## Anonimiza todos los JSON crudos de fixtures/raw en fixtures/canvas
