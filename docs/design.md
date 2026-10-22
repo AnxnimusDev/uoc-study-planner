@@ -216,7 +216,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 | `challenge` | `id`, `course_id`, `canvas_module_id`, `position`, `name`, `weight_pct`, `status` (SYNCED, EXTRACTED, NEEDS_REVIEW, AT_RISK, DONE) |
 | `canvas_page` | `course_id`, `page_url`, `title`, `role`, `body_html`, `body_hash`, `updated_at` |
 | `deliverable` | `canvas_assignment_id` PK, `challenge_id`, `name`, `unlock_at`, `due_at`, `lock_at`, `points`, `counts_for_grade`, `submission_types`, `rubric_json` |
-| `challenge_spec` | `challenge_id`, `version`, `spec_json`, `model`, `source_hash`, `user_edited` |
+| `challenge_spec` | `challenge_id`, `version`, `spec_json` (nulo si falla), `errors` (V4), `model`, `source_hash`, `user_edited`, `created_at` |
 | `task` | `id`, `challenge_id`, `spec_task_id`, `title`, `kind`, `estimated_hours`, `soft_deadline`, `hard_deadline`, `depends_on` |
 | `study_session` | `id`, `task_id`, `starts_at`, `ends_at`, `plan_version`, `state` (PLANNED, DONE, SKIPPED) |
 | `plan_version` | `id`, `created_at`, `trigger` (SYNC, CHECKIN, MANUAL), `unscheduled_hours` |
