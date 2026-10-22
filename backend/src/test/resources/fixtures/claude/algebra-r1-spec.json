@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "challengeTitle": "Repte 1. T'atreveixes a resoldre una equació de segon grau, amb solucions que impliquin una arrel quadrada d'un nombre negatiu?",
+  "language": "ca",
+  "summary": "Resoldre el QÜESTIONARI 1 a l'aula. L'avaluació pot incloure entrevistes síncrones i enregistraments de vídeo convocats pel professorat.",
+  "deliverables": [
+    { "ref": "assignment:979687", "type": "QUIZ" },
+    {
+      "ref": "assignment:979674",
+      "type": "VIDEO",
+      "formatRequirements": ["Només si el professorat ho convoca"]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "title": "Llegir la guia d'estudi setmanal del Repte 1",
+      "estimatedHours": 1,
+      "estimationBasis": "Una guia setmanal amb lectures recomanades",
+      "kind": "READING",
+      "dependsOn": []
+    },
+    {
+      "id": "t2",
+      "title": "Estudiar el material del Repte 1 seguint la GES",
+      "estimatedHours": 3,
+      "estimationBasis": "Material de dues setmanes per a un alumne a temps parcial",
+      "kind": "WORK",
+      "dependsOn": ["t1"]
+    },
+    {
+      "id": "t3",
+      "title": "Fer el QÜESTIONARI 1 - Setmana 2",
+      "estimatedHours": 1,
+      "estimationBasis": "Qüestionari Wiris d'una sessió",
+      "deliverableRef": "assignment:979687",
+      "kind": "QUIZ",
+      "dependsOn": ["t2"]
+    },
+    {
+      "id": "t4",
+      "title": "Enregistrar el vídeo de comprovació d'identitat i autoria",
+      "estimatedHours": 0.5,
+      "estimationBasis": "15 minuts per pujar-lo un cop convocat",
+      "deliverableRef": "assignment:979674",
+      "kind": "VIDEO_RECORDING",
+      "dependsOn": ["t3"]
+    }
+  ],
+  "aiPolicy": {
+    "level": "FORBIDDEN",
+    "evidence": "En aquesta activitat no està permès l'ús d'eines d'intel·ligència artificial."
+  },
+  "externalResources": [
+    {
+      "title": "fòrum de vídeos",
+      "url": "$CANVAS_OBJECT_REFERENCE$/discussion_topics/g40d06954a8675b8c9755e1fb3a4b68ca",
+      "kind": "STALE_LINK"
+    },
+    {
+      "title": "Rúbrica del vídeo",
+      "url": "http://materials.campus.uoc.edu/cdocent/PID_00293993/",
+      "kind": "UOC_PUBLIC"
+    }
+  ],
+  "warnings": ["L'enllaç al fòrum de vídeos no està resolt ($CANVAS_OBJECT_REFERENCE$)."],
+  "confidence": 0.8
+}

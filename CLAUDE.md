@@ -41,7 +41,7 @@ Cada subcarpeta con código tiene su propio `CLAUDE.md` con detalles locales.
 |---|---|
 | `auth` | Login con Playwright, captura y cifrado de la cookie, detección de sesión caducada |
 | `canvas` | Cliente HTTP de Canvas, paginación, sincronización, normalización a dominio |
-| `extraction` | Enunciado HTML → `ChallengeSpec` JSON validado (Spring AI + Anthropic) |
+| `extraction` | Enunciado HTML → `ChallengeSpec` JSON validado (SDK oficial de Anthropic, ADR 0006) |
 | `availability` | Semana tipo, excepciones y check-ins → franjas libres |
 | `planning` | Subtareas + franjas + plazos → plan (voraz en MVP, Timefold en fase 2) |
 | `scheduling` | Tareas programadas: sync diaria, check-ins de lunes y día 1 |
