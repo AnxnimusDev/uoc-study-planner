@@ -28,6 +28,8 @@
     <google-java-format.version>1.36.1</google-java-format.version>
     <jacoco.version>0.8.15</jacoco.version>
     <playwright.version>1.64.0</playwright.version>
+    <anthropic-java.version>2.75.0</anthropic-java.version>
+    <json-schema-validator.version>2.0.8</json-schema-validator.version>
     <!-- Tests left out of mvn verify: real Claude API (live) and real Chromium (browser). -->
     <surefire.excludedGroups>live,browser</surefire.excludedGroups>
   </properties>
@@ -103,6 +105,17 @@
       <artifactId>jsoup</artifactId>
       <version>${jsoup.version}</version>
     </dependency>
+    <!-- Requirement extraction with Claude (extraction, ADR 0006). -->
+    <dependency>
+      <groupId>com.anthropic</groupId>
+      <artifactId>anthropic-java</artifactId>
+      <version>${anthropic-java.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>${json-schema-validator.version}</version>
+    </dependency>
     <!-- Interactive UOC login (auth, ADR 0002). -->
     <dependency>
       <groupId>com.microsoft.playwright</groupId>
@@ -150,6 +163,19 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- Single source of truth for the ChallengeSpec schema: docs/. -->
+      <resource>
+        <directory>../docs</directory>
+        <targetPath>schemas</targetPath>
+        <includes>
+          <include>challenge-spec.schema.json</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

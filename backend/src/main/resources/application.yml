@@ -19,6 +19,9 @@ server:
 planner:
   # AES-256-GCM key for the session cookie and settings: openssl rand -base64 32
   secret-key: ${PLANNER_SECRET_KEY:}
+  extraction:
+    # Claude API key; without it extraction is disabled and the rest still works (ADR 0006).
+    api-key: ${ANTHROPIC_API_KEY:}
 
 ---
 # Local development against the PostgreSQL of docker-compose.yml (make up).
