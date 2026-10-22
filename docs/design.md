@@ -225,7 +225,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 | `checkin` | `id`, `kind` (WEEKLY, MONTHLY), `period_start`, `answers_json`, `answered_at` |
 | `external_ref` | `entity_type`, `entity_id`, `system`, `external_id` |
 | `user_settings` | clave/valor cifrado |
-| `session_secret` | `id`, `cookie_blob` (cifrado), `captured_at`, `last_valid_at` |
+| `session_secret` | `id`, `cookie_blob` (cifrado), `captured_at`, `last_valid_at`, `expired_at` (V2) |
 
 ## 11. Stack y repositorio
 
