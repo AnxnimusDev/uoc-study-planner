@@ -7,7 +7,7 @@ export
 RAW_DIR := backend/src/test/resources/fixtures/raw
 FIXTURE_DIR := backend/src/test/resources/fixtures/canvas
 
-.PHONY: help up down test run login sync extract feed fixtures format
+.PHONY: help up down test run login sync extract plan feed fixtures format
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -32,6 +32,9 @@ sync: up ## Sincroniza Canvas con la sesión guardada
 
 extract: up ## Extrae con Claude los enunciados nuevos o modificados
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=extract
+
+plan: up ## Sincroniza, extrae y planifica; muestra los próximos 7 días
+	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=plan
 
 feed: up ## Muestra las URL de los calendarios para suscribirte
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=feed-url

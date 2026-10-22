@@ -35,17 +35,18 @@ class CanvasStore {
   void upsertCourse(Course course, String icsUrl) {
     jdbc.sql(
             """
-            INSERT INTO course (canvas_id, code, name, term_id, ics_url, selected)
-            VALUES (:id, :code, :name, :term, :ics, true)
+            INSERT INTO course (canvas_id, code, name, term_id, ics_url, start_at, selected)
+            VALUES (:id, :code, :name, :term, :ics, :start, true)
             ON CONFLICT (canvas_id) DO UPDATE
               SET code = EXCLUDED.code, name = EXCLUDED.name, term_id = EXCLUDED.term_id,
-                  ics_url = EXCLUDED.ics_url
+                  ics_url = EXCLUDED.ics_url, start_at = EXCLUDED.start_at
             """)
         .param("id", course.canvasId())
         .param("code", Objects.requireNonNullElse(course.code(), course.name()))
         .param("name", course.name())
         .param("term", course.termId())
         .param("ics", icsUrl)
+        .param("start", timestamp(course.startAt()))
         .update();
   }
 

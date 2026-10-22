@@ -55,7 +55,7 @@ public class CanvasCatalog {
         .list();
     return jdbc.sql(
             """
-            SELECT c.id, c.course_id, co.code, c.position, c.name, c.weight_pct, c.status,
+            SELECT c.id, c.course_id, co.code, co.start_at, c.position, c.name, c.weight_pct, c.status,
                    (SELECT body_html FROM canvas_page p
                      WHERE p.challenge_id = c.id AND p.role = 'STATEMENT' LIMIT 1) AS statement,
                    (SELECT body_html FROM canvas_page p
@@ -72,6 +72,7 @@ public class CanvasCatalog {
                     rs.getLong("id"),
                     rs.getLong("course_id"),
                     rs.getString("code"),
+                    instant(rs.getTimestamp("start_at")),
                     rs.getInt("position"),
                     rs.getString("name"),
                     rs.getBigDecimal("weight_pct"),
