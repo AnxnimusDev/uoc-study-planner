@@ -10,6 +10,8 @@ backend/src/test/resources/fixtures/raw/
 
 # Java / Maven
 backend/target/
+# Spring Modulith docs when tests run from the repo root (IDE)
+/build/
 *.class
 *.log
 
