@@ -129,6 +129,27 @@
       <groupId>io.github.openhtmltopdf</groupId>
       <artifactId>openhtmltopdf-pdfbox</artifactId>
       <version>${openhtmltopdf.version}</version>
+      <exclusions>
+        <!-- spring-jcl already provides the Commons Logging API (avoids a startup warning). -->
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- Native DNS resolver for WebClient on macOS (Netty warns without it). Version from the
+         Spring Boot BOM; ignored on other systems. -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-native-macos</artifactId>
+      <classifier>osx-aarch_64</classifier>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-native-macos</artifactId>
+      <classifier>osx-x86_64</classifier>
+      <scope>runtime</scope>
     </dependency>
     <!-- Interactive UOC login (auth, ADR 0002). -->
     <dependency>
