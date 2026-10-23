@@ -11,6 +11,7 @@ import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.TextBlock;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.uoc.planner.extraction.ExtractionUnavailableException;
 import java.util.Map;
@@ -72,7 +73,8 @@ public final class AnthropicSpecModel implements SpecModel {
     try {
       message = client().messages().create(params.build());
     } catch (AnthropicServiceException e) {
-      throw new ExtractionUnavailableException("Claude API answered " + e.statusCode(), e);
+      throw new ExtractionUnavailableException(
+          "Claude API answered " + e.statusCode() + reason(e), e);
     } catch (AnthropicException e) {
       throw new ExtractionUnavailableException("Cannot reach the Claude API: " + e.getMessage(), e);
     }
@@ -86,6 +88,23 @@ public final class AnthropicSpecModel implements SpecModel {
         message.stopDetails().flatMap(d -> d.category()).map(Object::toString).orElse(null);
     log.info("Extraction answered by {} (stop_reason {})", message.model(), stopReason);
     return new ModelReply(text, stopReason, message.model().toString(), category);
+  }
+
+  /**
+   * The {@code error.message} of the API body ("Your credit balance is too low…"), so a 400 says
+   * whether it is billing or a rejected request. The API key is never part of it.
+   */
+  private static String reason(AnthropicServiceException e) {
+    try {
+      String message =
+          e.body().convert(JsonNode.class).path("error").path("message").asText("").strip();
+      if (message.isEmpty()) {
+        return "";
+      }
+      return ": " + (message.length() > 300 ? message.substring(0, 300) + "…" : message);
+    } catch (RuntimeException ignored) {
+      return "";
+    }
   }
 
   private AnthropicClient client() {

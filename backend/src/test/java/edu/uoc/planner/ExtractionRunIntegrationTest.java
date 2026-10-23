@@ -193,6 +193,24 @@ class ExtractionRunIntegrationTest {
   }
 
   @Test
+  void reportsWhatItCouldNotReachAfterStopping() {
+    long r2 = challenge(565760, 4, "Repte 2");
+    anthropic.stubFor(
+        post(urlPathEqualTo("/v1/messages"))
+            .willReturn(
+                com.github.tomakehurst.wiremock.client.WireMock.aResponse().withStatus(529)));
+
+    ExtractionReport report = run.run();
+
+    assertThat(report.items())
+        .extracting(ExtractionReport.Item::challengeId, ExtractionReport.Item::outcome)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(r1, Outcome.PENDING),
+            org.assertj.core.groups.Tuple.tuple(r2, Outcome.NO_STATEMENT));
+    anthropic.verify(1, anyRequestedFor(anyUrl()));
+  }
+
+  @Test
   void neverReopensADoneChallenge() {
     jdbc.update("UPDATE challenge SET status = 'DONE' WHERE id = ?", r1);
     answer("algebra-r1-spec.json");

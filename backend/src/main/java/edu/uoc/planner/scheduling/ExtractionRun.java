@@ -41,6 +41,7 @@ public class ExtractionRun {
 
   public ExtractionReport run() {
     List<Item> items = new ArrayList<>();
+    String stopped = null;
     for (StoredChallenge challenge : catalog.selectedChallenges()) {
       if (challenge.statementHtml() == null || challenge.statementHtml().isBlank()) {
         items.add(item(challenge, Outcome.NO_STATEMENT));
@@ -57,12 +58,19 @@ public class ExtractionRun {
         items.add(item(challenge, Outcome.EDITED_BY_STUDENT));
         continue;
       }
+      if (stopped != null) {
+        // Keep classifying without calling Claude, so the report counts what is left.
+        items.add(item(challenge, Outcome.PENDING));
+        continue;
+      }
       ExtractionResult result;
       try {
         result = extractor.extract(input);
       } catch (ExtractionUnavailableException e) {
         log.warn("Extraction stopped: {}", e.getMessage());
-        return new ExtractionReport(items, e.getMessage());
+        stopped = e.getMessage();
+        items.add(item(challenge, Outcome.PENDING));
+        continue;
       }
       specs.save(challenge.id(), result);
       boolean valid = result instanceof ExtractionResult.Extracted;
@@ -70,7 +78,7 @@ public class ExtractionRun {
           challenge.id(), valid ? ChallengeStatus.EXTRACTED : ChallengeStatus.NEEDS_REVIEW);
       items.add(item(challenge, valid ? Outcome.EXTRACTED : Outcome.NEEDS_REVIEW));
     }
-    return new ExtractionReport(items, null);
+    return new ExtractionReport(items, stopped);
   }
 
   private static ExtractionInput input(StoredChallenge challenge) {

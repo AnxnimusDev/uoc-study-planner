@@ -27,7 +27,8 @@ class ExtractCommandTest {
                 List.of(
                     new Item(1, "05.557", "Repte 1", Outcome.EXTRACTED),
                     new Item(2, "05.557", "Repte 2", Outcome.UNCHANGED),
-                    new Item(3, "05.590", "Repte 1", Outcome.NEEDS_REVIEW)),
+                    new Item(3, "05.590", "Repte 1", Outcome.NEEDS_REVIEW),
+                    new Item(4, "05.590", "Repte 2", Outcome.PENDING)),
                 null));
 
     ExtractCommand command = command();
@@ -35,7 +36,7 @@ class ExtractCommandTest {
 
     assertThat(command.getExitCode()).isZero();
     assertThat(output())
-        .contains("1 extraídos, 1 para revisar, 1 sin cambios")
+        .contains("1 extraídos, 1 para revisar, 1 sin cambios, 0 sin enunciado, 1 pendientes")
         .contains("05.590 · Repte 1: necesita revisión")
         .doesNotContain("Repte 2");
   }

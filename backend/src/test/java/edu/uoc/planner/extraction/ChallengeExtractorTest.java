@@ -180,6 +180,25 @@ class ChallengeExtractorTest {
   }
 
   @Test
+  void explainsWhyTheApiRefusedTheRequest() {
+    anthropic.stubFor(
+        post(urlPathEqualTo(MESSAGES))
+            .willReturn(
+                aResponse()
+                    .withStatus(400)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\","
+                            + "\"message\":\"Your credit balance is too low to access the Anthropic API.\"}}")));
+
+    assertThatThrownBy(() -> extractor("test-key", true).extract(algebraR1()))
+        .isInstanceOf(ExtractionUnavailableException.class)
+        .hasMessageContaining("400")
+        .hasMessageContaining("Your credit balance is too low")
+        .hasMessageNotContaining("test-key");
+  }
+
+  @Test
   void isUnavailableWithoutCallingTheApiWhenThereIsNoKey() {
     assertThatThrownBy(() -> extractor("", true).extract(algebraR1()))
         .isInstanceOf(ExtractionUnavailableException.class)

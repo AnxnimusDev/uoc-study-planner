@@ -24,7 +24,8 @@ final class ExtractCommand implements ApplicationRunner, ExitCodeGenerator {
           Outcome.NEEDS_REVIEW, "necesita revisión",
           Outcome.UNCHANGED, "sin cambios",
           Outcome.NO_STATEMENT, "sin enunciado",
-          Outcome.EDITED_BY_STUDENT, "corregido por ti, el enunciado ha cambiado: revísalo");
+          Outcome.EDITED_BY_STUDENT, "corregido por ti, el enunciado ha cambiado: revísalo",
+          Outcome.PENDING, "pendiente");
 
   private final ExtractionRun run;
   private final PrintStream out;
@@ -53,9 +54,13 @@ final class ExtractCommand implements ApplicationRunner, ExitCodeGenerator {
             + counts.getOrDefault(Outcome.NEEDS_REVIEW, 0L)
             + " para revisar, "
             + counts.getOrDefault(Outcome.UNCHANGED, 0L)
-            + " sin cambios.");
+            + " sin cambios, "
+            + counts.getOrDefault(Outcome.NO_STATEMENT, 0L)
+            + " sin enunciado, "
+            + counts.getOrDefault(Outcome.PENDING, 0L)
+            + " pendientes.");
     report.items().stream()
-        .filter(i -> i.outcome() != Outcome.UNCHANGED)
+        .filter(i -> i.outcome() != Outcome.UNCHANGED && i.outcome() != Outcome.PENDING)
         .forEach(
             i ->
                 out.println(

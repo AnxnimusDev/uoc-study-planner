@@ -57,7 +57,13 @@ class PlanCommandTest {
             new PipelineReport(
                 new SyncReport(List.of()),
                 null,
-                new ExtractionReport(List.of(), null),
+                new ExtractionReport(
+                    List.of(
+                        new ExtractionReport.Item(
+                            3, "05.557", "Repte 1", ExtractionReport.Outcome.PENDING),
+                        new ExtractionReport.Item(
+                            4, "20.439", "Challenge 1", ExtractionReport.Outcome.NO_STATEMENT)),
+                    "Claude API answered 400: Your credit balance is too low"),
                 new PlanReport(
                     plan, List.of("05.590 · Lliurament R1"), ZoneId.of("Europe/Madrid"))));
 
@@ -66,6 +72,8 @@ class PlanCommandTest {
 
     assertThat(command.getExitCode()).isZero();
     assertThat(output())
+        .contains("0 extraídos, 0 para revisar, 1 sin enunciado, 1 pendientes")
+        .contains("Extracción detenida: Claude API answered 400: Your credit balance is too low")
         .contains("Lunes 26/10", "18:15–19:00 · 05.557 · Llegir la GES")
         .contains("En riesgo", "2:t1: faltan 90 min")
         .contains("Sin estimar", "05.590 · Lliurament R1")

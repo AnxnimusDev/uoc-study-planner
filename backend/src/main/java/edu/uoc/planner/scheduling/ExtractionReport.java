@@ -22,7 +22,9 @@ public record ExtractionReport(List<Item> items, String stoppedBecause) {
     /** No readable statement page. */
     NO_STATEMENT,
     /** The statement changed but the student corrected the last spec: kept, to review by hand. */
-    EDITED_BY_STUDENT
+    EDITED_BY_STUDENT,
+    /** Needs an extraction, but the run had stopped (no key, API down): tried next time. */
+    PENDING
   }
 
   public record Item(long challengeId, String courseCode, String challengeName, Outcome outcome) {}

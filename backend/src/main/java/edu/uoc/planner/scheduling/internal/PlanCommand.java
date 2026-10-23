@@ -89,7 +89,9 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
             + extracted.getOrDefault(Outcome.NEEDS_REVIEW, 0L)
             + " para revisar, "
             + extracted.getOrDefault(Outcome.NO_STATEMENT, 0L)
-            + " sin enunciado.");
+            + " sin enunciado, "
+            + extracted.getOrDefault(Outcome.PENDING, 0L)
+            + " pendientes.");
     if (report.extraction().stoppedBecause() != null) {
       out.println("  Extracción detenida: " + report.extraction().stoppedBecause());
     }
