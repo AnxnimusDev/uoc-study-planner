@@ -1,0 +1,198 @@
+[
+  {
+    "id": 535050,
+    "position": 1,
+    "name": "Forum General i Presentacions",
+    "unlock_at": null,
+    "require_sequential_progress": false,
+    "requirement_type": "all",
+    "publish_final_grade": false,
+    "prerequisite_module_ids": [],
+    "state": "completed",
+    "completed_at": "2026-10-23T11:06:47Z",
+    "items_count": 1,
+    "items_url": "https://aula.uoc.edu/api/v1/courses/90696/modules/535050/items",
+    "items": [
+      {
+        "id": 3148367,
+        "position": 1,
+        "title": "Fòrum General i Presentacions",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535050,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148367",
+        "content_id": 1978039,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978039"
+      }
+    ]
+  },
+  {
+    "id": 535051,
+    "position": 2,
+    "name": "Eina VerilUOC ",
+    "unlock_at": null,
+    "require_sequential_progress": false,
+    "requirement_type": "all",
+    "publish_final_grade": false,
+    "prerequisite_module_ids": [],
+    "state": "completed",
+    "completed_at": "2026-10-23T11:06:47Z",
+    "items_count": 7,
+    "items_url": "https://aula.uoc.edu/api/v1/courses/90696/modules/535051/items",
+    "items": [
+      {
+        "id": 3148368,
+        "position": 1,
+        "title": "Wiki de VerilUOC",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148368",
+        "page_url": "wiki-de-veriluoc",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/pages/wiki-de-veriluoc"
+      },
+      {
+        "id": 3148369,
+        "position": 2,
+        "title": " Assoliments i consideracions relacionades amb el plagi",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148369",
+        "page_url": "assoliments-i-consideracions-relacionades-amb-el-plagi",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/pages/assoliments-i-consideracions-relacionades-amb-el-plagi"
+      },
+      {
+        "id": 3148370,
+        "position": 3,
+        "title": "Fòrum de dubtes Instal·lació VerilUOC",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148370",
+        "content_id": 1978038,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978038"
+      },
+      {
+        "id": 3148371,
+        "position": 4,
+        "title": "Fòrum de dubtes d'exercicis no relacionats amb AC i PR",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148371",
+        "content_id": 1978037,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978037"
+      },
+      {
+        "id": 3148372,
+        "position": 5,
+        "title": "Fòrum de dubtes PAC2",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148372",
+        "content_id": 1978036,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978036"
+      },
+      {
+        "id": 3148373,
+        "position": 6,
+        "title": "Fòrum de dubtes PAC3",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148373",
+        "content_id": 1978035,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978035"
+      },
+      {
+        "id": 3148374,
+        "position": 7,
+        "title": "Fòrum de dubtes PR",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535051,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148374",
+        "content_id": 1978034,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978034"
+      }
+    ]
+  },
+  {
+    "id": 535052,
+    "position": 3,
+    "name": "Eina PyPAC ",
+    "unlock_at": null,
+    "require_sequential_progress": false,
+    "requirement_type": "all",
+    "publish_final_grade": false,
+    "prerequisite_module_ids": [],
+    "state": "completed",
+    "completed_at": "2026-10-23T11:06:47Z",
+    "items_count": 4,
+    "items_url": "https://aula.uoc.edu/api/v1/courses/90696/modules/535052/items",
+    "items": [
+      {
+        "id": 3148375,
+        "position": 1,
+        "title": "Descripció eina",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 535052,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148375",
+        "page_url": "descripcio-eina",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/pages/descripcio-eina"
+      },
+      {
+        "id": 3148376,
+        "position": 2,
+        "title": "Accés a PyPAC",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "ExternalUrl",
+        "module_id": 535052,
+        "html_url": "https://aula.uoc.edu/api/v1/courses/90696/module_item_redirect/3148376",
+        "external_url": "https://eimtveril.uoc.edu/pypac/client/login.php",
+        "new_tab": true
+      },
+      {
+        "id": 3148377,
+        "position": 3,
+        "title": "Accés a PyPAC alternatiu",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 535052,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148377",
+        "page_url": "acces-a-pypac-alternatiu",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/pages/acces-a-pypac-alternatiu"
+      },
+      {
+        "id": 3148378,
+        "position": 4,
+        "title": "Fòrum de dubtes PyPAC",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Discussion",
+        "module_id": 535052,
+        "html_url": "https://aula.uoc.edu/courses/90696/modules/items/3148378",
+        "content_id": 1978033,
+        "url": "https://aula.uoc.edu/api/v1/courses/90696/discussion_topics/1978033"
+      }
+    ]
+  }
+]

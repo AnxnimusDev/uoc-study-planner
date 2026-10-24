@@ -29,6 +29,10 @@ final class CanvasNormalizer {
 
   private static final String CHALLENGE_PREFIX = "repte";
   private static final String STATEMENT_PREFIX = "enunciat-de-lactivitat";
+
+  /** English classrooms: each "CA" module opens with a "caN-…-guidelines" page. */
+  private static final String STATEMENT_SUFFIX_EN = "-guidelines";
+
   private static final String STUDY_GUIDE_PREFIX = "ges-";
   private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
@@ -148,7 +152,7 @@ final class CanvasNormalizer {
   private static ChallengePage page(CanvasModuleItem item) {
     String url = item.pageUrl();
     String title = item.title().strip();
-    if (url.startsWith(STATEMENT_PREFIX)) {
+    if (url.startsWith(STATEMENT_PREFIX) || url.endsWith(STATEMENT_SUFFIX_EN)) {
       return new Statement(url, title);
     }
     if (url.startsWith(STUDY_GUIDE_PREFIX)) {

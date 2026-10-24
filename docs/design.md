@@ -130,7 +130,7 @@ Paginación por cabecera `Link`. Resilience4j: 2 req/s, reintento con backoff en
 
 - `Course` ← curso; se excluyen cursos con `enrollment_term_id` distinto del actual (Tutoria = term 1).
 - `Challenge` ← módulo que empieza por "Repte" (fallback: módulo con entrega con `due_at`).
-- `Statement` ← página con `page_url` que empieza por `enunciat-de-lactivitat`; si no, clasifica la IA.
+- `Statement` ← página con `page_url` que empieza por `enunciat-de-lactivitat` (o que acaba en `-guidelines` en las aulas en inglés); si no, clasifica la IA.
 - `StudyGuide` ← página con `page_url` que empieza por `ges-`.
 - `Deliverable` ← cada `Assignment` del módulo (`unlock_at`, `due_at`, `lock_at`, `points_possible`, `submission_types`, `omit_from_final_grade`).
 - `Resource` ← enlaces clasificados en fichero Canvas, material UOC público o web externa.

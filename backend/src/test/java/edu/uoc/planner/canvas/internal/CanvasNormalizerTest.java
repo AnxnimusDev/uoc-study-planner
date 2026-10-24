@@ -161,6 +161,61 @@ class CanvasNormalizerTest {
   }
 
   @Nested
+  class English {
+
+    private final List<CanvasModule> modules =
+        read("english-modules.json", new TypeReference<>() {});
+
+    // english-modules.json only: due dates as in the real classroom, built here.
+    private final List<CanvasAssignment> assignments =
+        List.of(
+            assignment(997398L, "CA1 Article submission", "2026-10-18T21:59:59Z", 10, false),
+            assignment(997401L, "CA1 Language quiz 1", "2026-10-11T21:59:59Z", 2, false),
+            assignment(997426L, "CA2 Story submission", "2026-11-08T22:59:59Z", 10, false));
+
+    @Test
+    void takesTheModulesWithDeadlinesAsChallenges() {
+      List<Challenge> challenges = normalizer.challenges(95209L, modules, assignments);
+
+      assertThat(challenges)
+          .extracting(Challenge::name)
+          .containsExactly("CA1 The value of time", "CA2 Citizen media");
+    }
+
+    @Test
+    void findsTheStatementInTheGuidelinesPage() {
+      List<Challenge> challenges = normalizer.challenges(95209L, modules, assignments);
+
+      assertThat(challenges.getFirst().statement())
+          .map(Statement::pageUrl)
+          .hasValue("ca1-the-value-of-time-guidelines");
+      assertThat(challenges.get(1).statement())
+          .map(Statement::pageUrl)
+          .hasValue("ca2-citizen-media-guidelines");
+    }
+  }
+
+  @Nested
+  class Labs {
+
+    @Test
+    void haveNothingToPlanWithoutDeliverables() {
+      assertThat(
+              normalizer.challenges(
+                  90696L,
+                  read("lab-fc-modules.json", new TypeReference<>() {}),
+                  read("lab-fc-assignments.json", new TypeReference<>() {})))
+          .isEmpty();
+      assertThat(
+              normalizer.challenges(
+                  89934L,
+                  read("lab-proto-modules.json", new TypeReference<>() {}),
+                  read("lab-proto-assignments.json", new TypeReference<>() {})))
+          .isEmpty();
+    }
+  }
+
+  @Nested
   class WithoutRepteModules {
 
     @Test
