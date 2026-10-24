@@ -37,7 +37,7 @@ public class PlanRun {
 
   private static final Logger log = LoggerFactory.getLogger(PlanRun.class);
 
-  static final int HORIZON_WEEKS = 6;
+  public static final int HORIZON_WEEKS = 6;
 
   /** Sessions this close are kept when replanning (design section 8). */
   static final Duration KEEP_WINDOW = Duration.ofDays(2);
@@ -79,7 +79,8 @@ public class PlanRun {
       latest.put(challenge.id(), spec);
       spec.flatMap(StoredSpec::spec).ifPresent(s -> valid.put(challenge.id(), s));
     }
-    PlanTaskAdapter.Result input = PlanTaskAdapter.adapt(challenges, valid, profile, now);
+    PlanTaskAdapter.Result input =
+        PlanTaskAdapter.adapt(challenges, valid, profile, catalog.selectedCourseCodes(), now);
     Plan plan =
         planner.plan(
             new PlanRequest(
@@ -105,7 +106,7 @@ public class PlanRun {
         plan.sessions().size(),
         plan.atRisk().size(),
         plan.unscheduled().toMinutes());
-    return new PlanReport(plan, input.unestimated(), profile.zone());
+    return new PlanReport(plan, input.unestimated(), input.unknownWeeklyCourses(), profile.zone());
   }
 
   private static ChallengeStatus statusWithoutRisk(Optional<StoredSpec> spec) {

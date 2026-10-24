@@ -64,6 +64,51 @@ class AvailabilityProfileLoaderTest {
   }
 
   @Test
+  void hasNoWeeklyStudyUnlessConfigured() {
+    assertThat(AvailabilityProfileLoader.load(EXAMPLE).weeklyStudy()).isEmpty();
+  }
+
+  @Test
+  void readsTheWeeklyStudyTime() throws IOException {
+    Path config =
+        write(
+            Files.readString(EXAMPLE)
+                + """
+
+                weeklyStudy:
+                  - { course: "20.043", minutes: 60, title: "Laboratori de prototipat" }
+                  - { course: "05.658", minutes: 30 }
+                """);
+
+    AvailabilityProfile profile = AvailabilityProfileLoader.load(config);
+
+    assertThat(profile.weeklyStudy())
+        .containsExactly(
+            new AvailabilityProfile.WeeklyStudy("20.043", 60, "Laboratori de prototipat"),
+            new AvailabilityProfile.WeeklyStudy("05.658", 30, null));
+  }
+
+  @Test
+  void rejectsWeeklyStudyWithoutTime() throws IOException {
+    Path config =
+        write(
+            Files.readString(EXAMPLE) + "\nweeklyStudy:\n  - { course: \"20.043\", minutes: 0 }\n");
+
+    assertThatThrownBy(() -> AvailabilityProfileLoader.load(config))
+        .isInstanceOf(AvailabilityConfigException.class)
+        .hasMessageContaining("weeklyStudy");
+  }
+
+  @Test
+  void rejectsWeeklyStudyWithoutCourse() throws IOException {
+    Path config = write(Files.readString(EXAMPLE) + "\nweeklyStudy:\n  - { minutes: 60 }\n");
+
+    assertThatThrownBy(() -> AvailabilityProfileLoader.load(config))
+        .isInstanceOf(AvailabilityConfigException.class)
+        .hasMessageContaining("course");
+  }
+
+  @Test
   void explainsHowToCreateAMissingFile() {
     assertThatThrownBy(() -> AvailabilityProfileLoader.load(dir.resolve("availability.yml")))
         .isInstanceOf(AvailabilityConfigException.class)

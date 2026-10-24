@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PlanTaskAdapterTest {
@@ -142,14 +143,76 @@ class PlanTaskAdapterTest {
   void skipsWhatIsAlreadyDue() throws Exception {
     PlanTaskAdapter.Result later =
         PlanTaskAdapter.adapt(
-            List.of(r1()), Map.of(1L, spec()), PROFILE, Instant.parse("2026-10-05T08:00:00Z"));
+            List.of(r1()),
+            Map.of(1L, spec()),
+            PROFILE,
+            Set.of("05.557"),
+            Instant.parse("2026-10-05T08:00:00Z"));
 
     assertThat(later.tasks()).extracting(PlanTask::id).containsExactly("1:t4");
   }
 
+  @Test
+  void reservesTheWeeklyTimeOfACourseWithoutChallenges() {
+    AvailabilityProfile profile =
+        PROFILE.withWeeklyStudy(
+            List.of(new AvailabilityProfile.WeeklyStudy("20.043", 60, "Laboratori de prototipat")));
+
+    PlanTaskAdapter.Result result =
+        PlanTaskAdapter.adapt(List.of(), Map.of(), profile, Set.of("20.043"), NOW);
+
+    // Thursday 2026-09-24 is in ISO week 39; the six-week horizon reaches week 45.
+    assertThat(result.tasks())
+        .extracting(PlanTask::id)
+        .containsExactly(
+            "weekly:20.043:2026-W39",
+            "weekly:20.043:2026-W40",
+            "weekly:20.043:2026-W41",
+            "weekly:20.043:2026-W42",
+            "weekly:20.043:2026-W43",
+            "weekly:20.043:2026-W44",
+            "weekly:20.043:2026-W45");
+    PlanTask first = result.tasks().getFirst();
+    assertThat(first.title()).isEqualTo("Laboratori de prototipat");
+    assertThat(first.kind()).isEqualTo(TaskKind.READING);
+    assertThat(first.estimate()).isEqualTo(Duration.ofMinutes(60));
+    assertThat(first.challengeId()).isZero();
+    assertThat(first.courseCode()).isEqualTo("20.043");
+    assertThat(first.challengeWeightPct()).isZero();
+    assertThat(first.marginDays()).isZero();
+    assertThat(first.graded()).isFalse();
+    assertThat(first.opensAt()).isEqualTo(Instant.parse("2026-09-20T22:00:00Z"));
+    assertThat(first.dueAt()).isEqualTo(Instant.parse("2026-09-27T21:59:59Z"));
+  }
+
+  @Test
+  void namesTheWeeklyTimeAfterTheCourseByDefault() {
+    AvailabilityProfile profile =
+        PROFILE.withWeeklyStudy(List.of(new AvailabilityProfile.WeeklyStudy("20.043", 30, null)));
+
+    PlanTask first =
+        PlanTaskAdapter.adapt(List.of(), Map.of(), profile, Set.of("20.043"), NOW)
+            .tasks()
+            .getFirst();
+
+    assertThat(first.title()).isEqualTo("Tiempo semanal · 20.043");
+  }
+
+  @Test
+  void reportsWeeklyTimeForCoursesThatAreNotSelected() {
+    AvailabilityProfile profile =
+        PROFILE.withWeeklyStudy(List.of(new AvailabilityProfile.WeeklyStudy("20.999", 60, null)));
+
+    PlanTaskAdapter.Result result =
+        PlanTaskAdapter.adapt(List.of(), Map.of(), profile, Set.of("20.043"), NOW);
+
+    assertThat(result.tasks()).isEmpty();
+    assertThat(result.unknownWeeklyCourses()).containsExactly("20.999");
+  }
+
   private static PlanTaskAdapter.Result adapt(
       List<StoredChallenge> challenges, Map<Long, ChallengeSpec> specs) {
-    return PlanTaskAdapter.adapt(challenges, specs, PROFILE, NOW);
+    return PlanTaskAdapter.adapt(challenges, specs, PROFILE, Set.of("05.557"), NOW);
   }
 
   private static PlanTask task(PlanTaskAdapter.Result result, String id) {

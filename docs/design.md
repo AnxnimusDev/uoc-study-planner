@@ -172,6 +172,7 @@ Horas libres = semana tipo − bloques ocupados (trabajo, desplazamientos, hobbi
 | Sueño y comidas | Horas de despertar, acostarse, pausas |
 | Preferencias | Franjas preferidas, sesión mín./máx., carga máxima diaria |
 | Margen | Días de antelación por defecto y por asignatura |
+| Tiempo semanal | Minutos fijos por semana y asignatura, aunque no tenga entregas (ADR 0007) |
 | Correo | Dirección UOC y personal |
 
 | Check-in | Preguntas |
@@ -217,7 +218,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 | `canvas_page` | `course_id`, `page_url`, `title`, `role`, `body_html`, `body_hash`, `updated_at` |
 | `deliverable` | `canvas_assignment_id` PK, `challenge_id`, `name`, `unlock_at`, `due_at`, `lock_at`, `points`, `counts_for_grade`, `submission_types`, `rubric_json` |
 | `challenge_spec` | `challenge_id`, `version`, `spec_json` (nulo si falla), `errors` (V4), `model`, `source_hash`, `user_edited`, `created_at` |
-| `task` | `id`, `challenge_id`, `spec_task_id`, `title`, `kind`, `estimated_hours`, `soft_deadline`, `hard_deadline`, `depends_on` |
+| `task` | `id`, `challenge_id` o `course_id` (V6), `spec_task_id`, `title`, `kind`, `estimated_hours`, `soft_deadline`, `hard_deadline`, `depends_on` |
 | `study_session` | `id`, `task_id`, `starts_at`, `ends_at`, `plan_version`, `state` (PLANNED, DONE, SKIPPED) |
 | `plan_version` | `id`, `created_at`, `trigger` (SYNC, CHECKIN, MANUAL), `unscheduled_hours` |
 | `plan_notice` (V5) | `plan_version`, `task_id`, `type` (VIDEO_WINDOW, MARGIN_SKIPPED), `starts_at`, `ends_at`, `message` |

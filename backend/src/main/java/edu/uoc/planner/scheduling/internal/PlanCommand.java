@@ -126,7 +126,8 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
                           + " · "
                           + s.title()));
         });
-    List<AtRiskTask> risks = report.plan().plan().atRisk();
+    List<AtRiskTask> risks =
+        report.plan().plan().atRisk().stream().filter(r -> !weekly(r)).toList();
     if (!risks.isEmpty()) {
       out.println();
       out.println("En riesgo (no cabe antes del plazo):");
@@ -141,6 +142,29 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
                       + r.reason()
                       + ")"));
     }
+    List<AtRiskTask> weeklyGaps =
+        report.plan().plan().atRisk().stream().filter(PlanCommand::weekly).toList();
+    if (!weeklyGaps.isEmpty()) {
+      out.println();
+      out.println("Tiempo semanal sin hueco (revisa tu disponibilidad):");
+      for (AtRiskTask gap : weeklyGaps) {
+        String[] parts = gap.taskId().split(":");
+        out.println(
+            "  · "
+                + parts[1]
+                + ", semana "
+                + parts[2]
+                + ": faltan "
+                + gap.missing().toMinutes()
+                + " min");
+      }
+    }
+    for (String code : report.plan().unknownWeeklyCourses()) {
+      out.println(
+          "weeklyStudy: "
+              + code
+              + " no es una asignatura seleccionada; revisa config/availability.yml.");
+    }
     if (!report.plan().unestimated().isEmpty()) {
       out.println();
       out.println("Sin estimar (no planificado, revisa el enunciado):");
@@ -154,6 +178,11 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
     }
     out.println();
     out.println("Calendarios: make feed muestra las URL para suscribirte.");
+  }
+
+  /** Weekly study time (ADR 0007) has no challenge: reported apart from the risks. */
+  private static boolean weekly(AtRiskTask risk) {
+    return risk.taskId().startsWith("weekly:");
   }
 
   @Override

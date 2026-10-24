@@ -39,3 +39,9 @@ deadlines:
   defaultMarginDays: 1
   perCourse:
     # "05.557": 2   # código de asignatura → días de margen
+
+# Tiempo reservado cada semana para una asignatura (ADR 0007), aunque no tenga entregas con fecha:
+# atender los anuncios, avanzar en material de autoestudio... Se planifica de lunes a domingo con la
+# prioridad más baja y aparece en el calendario "UOC · Plan de estudio".
+# weeklyStudy:
+#   - { course: "20.043", minutes: 60, title: "Laboratori de prototipat: anuncios y bloques" }

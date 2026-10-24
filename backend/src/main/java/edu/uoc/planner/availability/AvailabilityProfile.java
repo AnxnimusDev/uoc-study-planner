@@ -14,6 +14,7 @@ import java.util.Set;
  * @param lunch break on work days only; may be null
  * @param maxSessionMinutes and {@code maxDailyHours} are limits for the planner, not for free time
  * @param marginDaysPerCourse course code ("05.557") → days before {@code due_at} to finish
+ * @param weeklyStudy time reserved every week per course (ADR 0007)
  */
 public record AvailabilityProfile(
     ZoneId zone,
@@ -29,7 +30,8 @@ public record AvailabilityProfile(
     double maxDailyHours,
     Set<DayOfWeek> noStudyDays,
     int defaultMarginDays,
-    Map<String, Integer> marginDaysPerCourse) {
+    Map<String, Integer> marginDaysPerCourse,
+    List<WeeklyStudy> weeklyStudy) {
 
   public AvailabilityProfile {
     workDays = workDays.isEmpty() ? Map.of() : Map.copyOf(new EnumMap<>(workDays));
@@ -37,6 +39,7 @@ public record AvailabilityProfile(
     preferredSlots = List.copyOf(preferredSlots);
     noStudyDays = Set.copyOf(noStudyDays);
     marginDaysPerCourse = Map.copyOf(marginDaysPerCourse);
+    weeklyStudy = weeklyStudy == null ? List.of() : List.copyOf(weeklyStudy);
   }
 
   /** Days of margin before the real deadline for a course, or the default. */
@@ -62,7 +65,8 @@ public record AvailabilityProfile(
         maxDailyHours,
         noStudyDays,
         defaultMarginDays,
-        marginDaysPerCourse);
+        marginDaysPerCourse,
+        weeklyStudy);
   }
 
   public AvailabilityProfile withCommute(Commute newCommute) {
@@ -80,7 +84,8 @@ public record AvailabilityProfile(
         maxDailyHours,
         noStudyDays,
         defaultMarginDays,
-        marginDaysPerCourse);
+        marginDaysPerCourse,
+        weeklyStudy);
   }
 
   public AvailabilityProfile withNoStudyDays(Set<DayOfWeek> days) {
@@ -98,7 +103,8 @@ public record AvailabilityProfile(
         maxDailyHours,
         days,
         defaultMarginDays,
-        marginDaysPerCourse);
+        marginDaysPerCourse,
+        weeklyStudy);
   }
 
   public AvailabilityProfile withMinSessionMinutes(int minutes) {
@@ -116,8 +122,36 @@ public record AvailabilityProfile(
         maxDailyHours,
         noStudyDays,
         defaultMarginDays,
-        marginDaysPerCourse);
+        marginDaysPerCourse,
+        weeklyStudy);
   }
+
+  public AvailabilityProfile withWeeklyStudy(List<WeeklyStudy> entries) {
+    return new AvailabilityProfile(
+        zone,
+        workDays,
+        lunch,
+        commute,
+        wakeUp,
+        bedtime,
+        fixedActivities,
+        preferredSlots,
+        minSessionMinutes,
+        maxSessionMinutes,
+        maxDailyHours,
+        noStudyDays,
+        defaultMarginDays,
+        marginDaysPerCourse,
+        entries);
+  }
+
+  /**
+   * Time reserved every week for a course (ADR 0007), e.g. a lab with no deliverables.
+   *
+   * @param course course code, "20.043"
+   * @param title shown in the plan; the course code when null
+   */
+  public record WeeklyStudy(String course, int minutes, String title) {}
 
   public enum WorkMode {
     REMOTE,
