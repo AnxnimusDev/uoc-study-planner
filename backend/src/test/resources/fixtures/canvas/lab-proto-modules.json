@@ -1,0 +1,141 @@
+[
+  {
+    "id": 570754,
+    "position": 1,
+    "name": " Fase 1: Fonaments de Figma | Desbloqueja la interfície",
+    "unlock_at": null,
+    "require_sequential_progress": false,
+    "requirement_type": "all",
+    "publish_final_grade": false,
+    "prerequisite_module_ids": [],
+    "state": "completed",
+    "completed_at": "2026-10-23T11:06:48Z",
+    "items_count": 3,
+    "items_url": "https://aula.uoc.edu/api/v1/courses/89934/modules/570754/items",
+    "items": [
+      {
+        "id": 3338273,
+        "position": 1,
+        "title": "Bloc 1: Primeres passes amb Figma",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570754,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338273",
+        "page_url": "bloc-1-primeres-passes-amb-figma",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-1-primeres-passes-amb-figma"
+      },
+      {
+        "id": 3338274,
+        "position": 2,
+        "title": "Bloc 2: Comença a construir",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570754,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338274",
+        "page_url": "bloc-2-comenca-a-construir",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-2-comenca-a-construir"
+      },
+      {
+        "id": 3338275,
+        "position": 3,
+        "title": "Bloc 3: Text, estils, color i Intro a Design Systems",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570754,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338275",
+        "page_url": "bloc-3-text-estils-color-i-intro-a-design-systems",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-3-text-estils-color-i-intro-a-design-systems"
+      }
+    ]
+  },
+  {
+    "id": 570756,
+    "position": 2,
+    "name": "Fase 2: Components i Prototipatge | Pensa en sistemes i crea interaccions",
+    "unlock_at": null,
+    "require_sequential_progress": false,
+    "requirement_type": "all",
+    "publish_final_grade": false,
+    "prerequisite_module_ids": [],
+    "state": "completed",
+    "completed_at": "2026-10-23T11:06:48Z",
+    "items_count": 2,
+    "items_url": "https://aula.uoc.edu/api/v1/courses/89934/modules/570756/items",
+    "items": [
+      {
+        "id": 3338279,
+        "position": 1,
+        "title": "Bloc 4: Components bàsics (repetició i coherència)",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570756,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338279",
+        "page_url": "bloc-4-components-basics-repeticio-i-coherencia",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-4-components-basics-repeticio-i-coherencia"
+      },
+      {
+        "id": 3338280,
+        "position": 2,
+        "title": "Bloc 5: Prototipa i crea interaccions",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570756,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338280",
+        "page_url": "bloc-5-prototipa-i-crea-interaccions",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-5-prototipa-i-crea-interaccions"
+      }
+    ]
+  },
+  {
+    "id": 570758,
+    "position": 3,
+    "name": "Fase 3: Arquitectura i Sistemes Avançats | Maqueta com un professional",
+    "unlock_at": null,
+    "require_sequential_progress": false,
+    "requirement_type": "all",
+    "publish_final_grade": false,
+    "prerequisite_module_ids": [],
+    "state": "completed",
+    "completed_at": "2026-10-23T11:06:48Z",
+    "items_count": 2,
+    "items_url": "https://aula.uoc.edu/api/v1/courses/89934/modules/570758/items",
+    "items": [
+      {
+        "id": 3338282,
+        "position": 1,
+        "title": "Bloc 6: Auto Layout avançat i maquetació responsive",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570758,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338282",
+        "page_url": "bloc-6-auto-layout-avancat-i-maquetacio-responsive",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-6-auto-layout-avancat-i-maquetacio-responsive"
+      },
+      {
+        "id": 3338284,
+        "position": 2,
+        "title": "Bloc 7: Variables, Design Tokens i Sistemes de Disseny",
+        "indent": 0,
+        "quiz_lti": false,
+        "type": "Page",
+        "module_id": 570758,
+        "html_url": "https://aula.uoc.edu/courses/89934/modules/items/3338284",
+        "page_url": "bloc-7-variables-design-tokens-i-sistemes-de-disseny",
+        "publish_at": null,
+        "url": "https://aula.uoc.edu/api/v1/courses/89934/pages/bloc-7-variables-design-tokens-i-sistemes-de-disseny"
+      }
+    ]
+  }
+]

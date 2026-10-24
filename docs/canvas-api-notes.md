@@ -17,9 +17,9 @@ Los JSON reales anonimizados están en `backend/src/test/resources/fixtures/canv
 | `GET /api/v1/users/self` | Validar sesión | `users-self.json` |
 | `GET /api/v1/courses?enrollment_state=active&per_page=100` | Asignaturas | `courses.json` |
 | `GET /api/v1/courses/{id}/tabs` | Secciones (Pla docent es LTI) | `algebra-tabs.json` |
-| `GET /api/v1/courses/{id}/modules?include[]=items&per_page=100` | Retos y sus elementos | `algebra-modules.json`, `ipo-modules.json` |
+| `GET /api/v1/courses/{id}/modules?include[]=items&per_page=100` | Retos y sus elementos | `algebra-modules.json`, `ipo-modules.json`, `lab-fc-modules.json`, `lab-proto-modules.json`, `english-modules.json` |
 | `GET /api/v1/courses/{id}/pages/{page_url}` | Enunciado y guías | `algebra-page-enunciat-r1.json`, `ipo-page-enunciat-r1.json` |
-| `GET /api/v1/courses/{id}/assignments?per_page=100` | Entregas, fechas, puntos | `algebra-assignments.json` |
+| `GET /api/v1/courses/{id}/assignments?per_page=100` | Entregas, fechas, puntos | `algebra-assignments.json`, `lab-fc-assignments.json` y `lab-proto-assignments.json` (vacíos) |
 | `GET /api/v1/courses/{id}/assignment_groups` | Grupos y pesos | `algebra-assignment-groups.json` |
 | `GET /api/v1/courses/{id}/assignments/{aid}` | Rúbrica (`rubric`) | pendiente de capturar |
 | `GET /feeds/calendars/course_{uuid}.ics` | Calendario, **sin sesión** | — |
@@ -29,11 +29,11 @@ Los JSON reales anonimizados están en `backend/src/test/resources/fixtures/canv
 | id | Asignatura | Notas |
 |---|---|---|
 | 94063 | 05.557 Àlgebra | Cuestionarios Wiris + entrega final R5 (40 %) + vídeos de autoría |
-| 94782 | 05.562 Fonaments de computadors | Sin explorar |
+| 94782 | 05.562 Fonaments de computadors | 4 retos; entregas PAC1, PAC3 y Pràctica (sync real, 23/10/2026) |
 | 92868 | 05.590 Interacció persona ordinador | 4 retos con entrega PDF |
-| 90696 | 05.658 Laboratori Fonaments de computadors | Sin explorar |
-| 89934 | 20.043 Laboratori de prototipat | Sin explorar |
-| 95209 | 20.439 English B2.2 | Sin explorar, locale `en-GB` |
+| 90696 | 05.658 Laboratori Fonaments de computadors | Sin entregas: foros y herramientas (VerilUOC, PyPAC) |
+| 89934 | 20.043 Laboratori de prototipat | Sin entregas: 3 fases con 7 bloques de páginas (Figma) |
+| 95209 | 20.439 English B2.2 | Retos = módulos `CA1`…`CA5`; enunciado `caN-…-guidelines`; locale `en-GB` |
 | 22184 | Tutoria Grau en Enginyeria Informàtica | `enrollment_term_id` = 1, excluir |
 
 ## Estructura de un reto (módulo)
@@ -53,6 +53,16 @@ Los JSON reales anonimizados están en `backend/src/test/resources/fixtures/canv
 IPO, Repte 1 (`module_id` 557028): mismo patrón pero sin GES, con una página extra de estudio de caso
 y un foro evaluable ("Validació de perfil amb IA"). El título de la página de enunciado cambia
 ("Repte 1. Investigació") pero el `page_url` sigue siendo `enunciat-de-lactivitat-r1`.
+
+## Otras estructuras (fixtures del 23/10/2026)
+
+- **English B2.2**: no hay módulos "Repte". Cada reto es un módulo `CAn <tema>` con una página
+  `caN-…-guidelines` (enunciado), `caN-learning-resources`, páginas `…-instructions` por actividad,
+  cuestionarios ("Language quiz"), entregas ("submission"), foros y la herramienta externa Tandem.
+  Los módulos con entregas con fecha se detectan con la regla alternativa del normalizador.
+- **Laboratoris** (Fonaments, Prototipat): `assignments` vacío. Fonaments solo tiene foros de dudas y
+  herramientas; sus PAC se entregan en el aula de Fonaments de computadors. Prototipat es material de
+  autoestudio (bloques de Figma) sin fechas. No hay nada que planificar desde Canvas.
 
 ## Entregas (Àlgebra)
 
@@ -80,4 +90,4 @@ y un foro evaluable ("Validació de perfil amb IA"). El título de la página de
 - Rúbrica adjunta a `GET /api/v1/courses/92868/assignments/968028`.
 - `locked_for_user` en páginas de retos aún no abiertos.
 - Duración de la cookie de sesión.
-- Patrón de módulos en las otras cuatro asignaturas.
+- Si los laboratorios tienen actividades evaluables fuera de Canvas.

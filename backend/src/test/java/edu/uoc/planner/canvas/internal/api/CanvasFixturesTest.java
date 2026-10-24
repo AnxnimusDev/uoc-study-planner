@@ -30,16 +30,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 class CanvasFixturesTest {
 
   private static final Map<String, Class<?>> TYPES =
-      Map.of(
-          "users-self.json", CanvasUser.class,
-          "courses.json", CanvasCourse.class,
-          "algebra-tabs.json", CanvasTab.class,
-          "algebra-modules.json", CanvasModule.class,
-          "ipo-modules.json", CanvasModule.class,
-          "algebra-page-enunciat-r1.json", CanvasPage.class,
-          "ipo-page-enunciat-r1.json", CanvasPage.class,
-          "algebra-assignments.json", CanvasAssignment.class,
-          "algebra-assignment-groups.json", CanvasAssignmentGroup.class);
+      Map.ofEntries(
+          Map.entry("users-self.json", CanvasUser.class),
+          Map.entry("courses.json", CanvasCourse.class),
+          Map.entry("algebra-tabs.json", CanvasTab.class),
+          Map.entry("algebra-modules.json", CanvasModule.class),
+          Map.entry("ipo-modules.json", CanvasModule.class),
+          Map.entry("algebra-page-enunciat-r1.json", CanvasPage.class),
+          Map.entry("ipo-page-enunciat-r1.json", CanvasPage.class),
+          Map.entry("algebra-assignments.json", CanvasAssignment.class),
+          Map.entry("algebra-assignment-groups.json", CanvasAssignmentGroup.class),
+          Map.entry("lab-fc-modules.json", CanvasModule.class),
+          Map.entry("lab-fc-assignments.json", CanvasAssignment.class),
+          Map.entry("lab-proto-modules.json", CanvasModule.class),
+          Map.entry("lab-proto-assignments.json", CanvasAssignment.class),
+          Map.entry("english-modules.json", CanvasModule.class));
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new JavaTimeModule());

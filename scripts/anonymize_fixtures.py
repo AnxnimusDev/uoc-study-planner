@@ -29,6 +29,7 @@ DROP_KEYS = {
     "avatar_url",
     "avatar_image_url",
     "lti_context_id",
+    "lti_resource_link_lookup_uuid",
     "uuid_hash",
     "login_id",
     "email",

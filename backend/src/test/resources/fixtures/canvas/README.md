@@ -14,6 +14,11 @@ Respuestas reales de `aula.uoc.edu` capturadas el 18–19 de octubre de 2026 y a
 | `algebra-page-enunciat-r1.json` | `/api/v1/courses/94063/pages/enunciat-de-lactivitat-r1` | Àlgebra R1 |
 | `ipo-modules.json` | `/api/v1/courses/92868/modules?include[]=items` | IPO (4 retos) |
 | `ipo-page-enunciat-r1.json` | `/api/v1/courses/92868/pages/enunciat-de-lactivitat-r1` | IPO R1 |
+| `lab-fc-modules.json` | `/api/v1/courses/90696/modules?include[]=items` | Lab. Fonaments (sin entregas) |
+| `lab-fc-assignments.json` | `/api/v1/courses/90696/assignments` | Lab. Fonaments: `[]` |
+| `lab-proto-modules.json` | `/api/v1/courses/89934/modules?include[]=items` | Lab. Prototipat (bloques de Figma) |
+| `lab-proto-assignments.json` | `/api/v1/courses/89934/assignments` | Lab. Prototipat: `[]` |
+| `english-modules.json` | `/api/v1/courses/95209/modules?include[]=items` | English B2.2 (módulos CA1–CA5) |
 
 Valores útiles para aserciones:
 
