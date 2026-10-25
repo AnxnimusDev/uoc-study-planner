@@ -178,7 +178,6 @@ public final class GreedyPlanner implements Planner {
       long remaining,
       PlanLimits limits,
       List<PlannedSession> out) {
-    long maxDaily = Math.round(limits.maxDailyHours() * 60);
     long min = limits.minSessionMinutes();
     while (remaining > 0) {
       long left = remaining;
@@ -192,7 +191,7 @@ public final class GreedyPlanner implements Planner {
               tier.preferredOnly(),
               tier.courseLimit(),
               task.courseCode(),
-              maxDaily);
+              limits::maxDailyMinutes);
       if (spot.isEmpty()) {
         spot =
             capacity
@@ -204,7 +203,7 @@ public final class GreedyPlanner implements Planner {
                     tier.preferredOnly(),
                     tier.courseLimit(),
                     task.courseCode(),
-                    maxDaily)
+                    limits::maxDailyMinutes)
                 .map(s -> avoidShortTail(s, left, min));
       }
       if (spot.isEmpty() || spot.get().minutes() <= 0) {

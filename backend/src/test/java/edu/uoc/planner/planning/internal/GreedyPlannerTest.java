@@ -11,6 +11,7 @@ import edu.uoc.planner.planning.PlanLimits;
 import edu.uoc.planner.planning.PlanRequest;
 import edu.uoc.planner.planning.PlanTask;
 import edu.uoc.planner.planning.PlannedSession;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -72,6 +73,29 @@ class GreedyPlannerTest {
               });
       assertDailyLimit(plan);
       assertNoOverlaps(plan);
+    }
+
+    @Test
+    void respectsTheLimitOfEachWeekday() {
+      PlanLimits limits =
+          new PlanLimits(30, 120, 3.0, Map.of(DayOfWeek.MONDAY, 1.5, DayOfWeek.FRIDAY, 0.5));
+
+      Plan plan =
+          planner.plan(
+              new PlanRequest(
+                  NOW,
+                  MADRID,
+                  List.of(task("t1").hours(4).due(MONDAY.plusDays(1)).margin(0).build()),
+                  evenings(14),
+                  limits,
+                  6,
+                  List.of()));
+
+      // Tuesday alone fits 3 h: the fourth hour has to go on Monday, within its 1 h 30.
+      assertThat(perDay(plan).get(MONDAY))
+          .isBetween(Duration.ofMinutes(60), Duration.ofMinutes(90));
+      assertThat(total(plan, "t1")).isEqualTo(Duration.ofHours(4));
+      assertThat(plan.atRisk()).isEmpty();
     }
 
     @Test
@@ -613,14 +637,16 @@ class GreedyPlannerTest {
   }
 
   private static void assertDailyLimit(Plan plan) {
-    Map<LocalDate, Duration> perDay =
-        plan.sessions().stream()
-            .collect(
-                Collectors.groupingBy(
-                    s -> s.start().atZone(MADRID).toLocalDate(),
-                    Collectors.reducing(Duration.ZERO, PlannedSession::duration, Duration::plus)));
-    assertThat(perDay.values())
+    assertThat(perDay(plan).values())
         .allSatisfy(d -> assertThat(d).isLessThanOrEqualTo(Duration.ofHours(3)));
+  }
+
+  private static Map<LocalDate, Duration> perDay(Plan plan) {
+    return plan.sessions().stream()
+        .collect(
+            Collectors.groupingBy(
+                s -> s.start().atZone(MADRID).toLocalDate(),
+                Collectors.reducing(Duration.ZERO, PlannedSession::duration, Duration::plus)));
   }
 
   private static TaskBuilder task(String id) {

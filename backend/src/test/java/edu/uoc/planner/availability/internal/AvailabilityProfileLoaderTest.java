@@ -64,6 +64,46 @@ class AvailabilityProfileLoaderTest {
   }
 
   @Test
+  void usesTheSameDailyLimitEveryDayUnlessConfigured() {
+    AvailabilityProfile profile = AvailabilityProfileLoader.load(EXAMPLE);
+
+    assertThat(profile.maxDailyHoursPerDay()).isEmpty();
+    assertThat(profile.maxDailyHours(DayOfWeek.MONDAY)).isEqualTo(3);
+  }
+
+  @Test
+  void readsADailyLimitPerWeekday() throws IOException {
+    Path config =
+        write(
+            Files.readString(EXAMPLE)
+                .replace(
+                    "  maxDailyHours: 3\n",
+                    "  maxDailyHours: 3.5\n"
+                        + "  maxDailyHoursPerDay: { MONDAY: 1.5, FRIDAY: 6.5, SUNDAY: 4 }\n"));
+
+    AvailabilityProfile profile = AvailabilityProfileLoader.load(config);
+
+    assertThat(profile.maxDailyHours(DayOfWeek.MONDAY)).isEqualTo(1.5);
+    assertThat(profile.maxDailyHours(DayOfWeek.FRIDAY)).isEqualTo(6.5);
+    assertThat(profile.maxDailyHours(DayOfWeek.SUNDAY)).isEqualTo(4);
+    assertThat(profile.maxDailyHours(DayOfWeek.WEDNESDAY)).isEqualTo(3.5);
+  }
+
+  @Test
+  void rejectsADailyLimitBelowOneSession() throws IOException {
+    Path config =
+        write(
+            Files.readString(EXAMPLE)
+                .replace(
+                    "  maxDailyHours: 3\n",
+                    "  maxDailyHours: 3\n  maxDailyHoursPerDay: { TUESDAY: 0.25 }\n"));
+
+    assertThatThrownBy(() -> AvailabilityProfileLoader.load(config))
+        .isInstanceOf(AvailabilityConfigException.class)
+        .hasMessageContaining("maxDailyHoursPerDay.TUESDAY");
+  }
+
+  @Test
   void hasNoWeeklyStudyUnlessConfigured() {
     assertThat(AvailabilityProfileLoader.load(EXAMPLE).weeklyStudy()).isEmpty();
   }

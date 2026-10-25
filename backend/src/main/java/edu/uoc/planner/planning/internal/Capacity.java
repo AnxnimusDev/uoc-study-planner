@@ -1,6 +1,7 @@
 package edu.uoc.planner.planning.internal;
 
 import edu.uoc.planner.availability.FreeSlot;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.ToLongFunction;
 
 /**
  * What is still free while the plan is built: free windows, minutes studied per day and courses per
@@ -66,7 +68,7 @@ final class Capacity {
   /**
    * Earliest place for a session between {@code minMinutes} and {@code maxMinutes}.
    *
-   * @param maxDailyMinutes daily study limit
+   * @param maxDailyMinutes daily study limit per weekday
    * @param courseLimit days that already have two other courses are skipped
    */
   Optional<Spot> find(
@@ -77,7 +79,7 @@ final class Capacity {
       boolean preferredOnly,
       boolean courseLimit,
       String course,
-      long maxDailyMinutes) {
+      ToLongFunction<DayOfWeek> maxDailyMinutes) {
     for (Window window : windows(preferredOnly)) {
       if (!window.end().isAfter(earliest)) {
         continue;
@@ -94,7 +96,8 @@ final class Capacity {
           continue;
         }
       }
-      long dayLeft = maxDailyMinutes - studied.getOrDefault(day, 0L);
+      long dayLeft =
+          maxDailyMinutes.applyAsLong(day.getDayOfWeek()) - studied.getOrDefault(day, 0L);
       long minutes =
           Math.min(Math.min(maxMinutes, Duration.between(start, end).toMinutes()), dayLeft);
       if (minutes >= minMinutes && minutes > 0) {

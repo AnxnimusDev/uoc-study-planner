@@ -170,7 +170,7 @@ Horas libres = semana tipo − bloques ocupados (trabajo, desplazamientos, hobbi
 | Desplazamiento | Minutos por trayecto en días de oficina |
 | Actividades fijas | Nombre, días, franja |
 | Sueño y comidas | Horas de despertar, acostarse, pausas |
-| Preferencias | Franjas preferidas, sesión mín./máx., carga máxima diaria |
+| Preferencias | Franjas preferidas, sesión mín./máx., carga máxima diaria (una general y, opcional, una por día de la semana) |
 | Margen | Días de antelación por defecto y por asignatura |
 | Tiempo semanal | Minutos fijos por semana y asignatura, aunque no tenga entregas (ADR 0007) |
 | Correo | Dirección UOC y personal |
