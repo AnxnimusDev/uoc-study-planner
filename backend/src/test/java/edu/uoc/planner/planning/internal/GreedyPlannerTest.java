@@ -526,6 +526,113 @@ class GreedyPlannerTest {
   }
 
   @Nested
+  class WholeQuizzes {
+
+    @Test
+    void placesAQuizInOneSessionLongerThanTheMaximum() {
+      PlanTask quiz = task("q").kind(TaskKind.QUIZ).minutes(150).build();
+
+      Plan plan = plan(List.of(quiz), evenings(14));
+
+      assertThat(sessionsOf(plan, "q"))
+          .singleElement()
+          .satisfies(s -> assertThat(s.duration()).isEqualTo(Duration.ofMinutes(150)));
+    }
+
+    @Test
+    void putsAQuizAtRiskWhenNoGapHoldsItWhole() {
+      PlanTask quiz = task("q").kind(TaskKind.QUIZ).minutes(90).build();
+
+      Plan plan = plan(List.of(quiz), daily(14, "18:00", "19:00", true));
+
+      assertThat(sessionsOf(plan, "q")).isEmpty();
+      assertThat(risk(plan, "q").reason()).contains("90 min seguidos");
+      assertThat(risk(plan, "q").missing()).isEqualTo(Duration.ofMinutes(90));
+    }
+
+    @Test
+    void dropsKeptPiecesOfAQuiz() {
+      PlannedSession piece =
+          new PlannedSession(
+              "q",
+              1,
+              "05.557",
+              "Qüestionari",
+              TaskKind.QUIZ,
+              at(MONDAY, "18:00"),
+              at(MONDAY, "18:30"),
+              true);
+      PlanTask quiz = task("q").kind(TaskKind.QUIZ).minutes(90).build();
+
+      Plan plan =
+          planner.plan(
+              new PlanRequest(NOW, MADRID, List.of(quiz), evenings(14), LIMITS, 6, List.of(piece)));
+
+      assertThat(sessionsOf(plan, "q"))
+          .singleElement()
+          .satisfies(s -> assertThat(s.duration()).isEqualTo(Duration.ofMinutes(90)));
+    }
+  }
+
+  @Nested
+  class Overload {
+
+    private final PlanTask soon =
+        task("soon")
+            .course("05.557")
+            .challenge(1)
+            .hours(12)
+            .due(MONDAY.plusDays(2))
+            .margin(0)
+            .build();
+    private final PlanTask later =
+        task("later")
+            .course("05.562")
+            .challenge(2)
+            .hours(24)
+            .due(MONDAY.plusDays(13))
+            .margin(0)
+            .build();
+
+    @Test
+    void sharesTheWeekWhenNotEverythingFits() {
+      Plan plan = plan(List.of(soon, later), evenings(14));
+
+      // In deadline order "soon" would take Monday to Wednesday alone.
+      assertThat(onDay(plan, MONDAY.plusDays(2)))
+          .extracting(PlannedSession::taskId)
+          .contains("later");
+      assertThat(sessionsOf(plan, "soon")).isNotEmpty();
+      assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).containsExactly("soon");
+      assertNoOverlaps(plan);
+      assertDailyLimit(plan);
+    }
+
+    @Test
+    void keepsDeadlineOrderWhenEverythingFits() {
+      PlanTask small =
+          task("soon")
+              .course("05.557")
+              .challenge(1)
+              .hours(6)
+              .due(MONDAY.plusDays(2))
+              .margin(0)
+              .build();
+
+      Plan plan = plan(List.of(small, later), evenings(14));
+
+      assertThat(plan.atRisk()).isEmpty();
+      // Same as plain deadline order: whole two-hour sessions of "soon" every evening first.
+      assertThat(sessionsOf(plan, "soon"))
+          .extracting(PlannedSession::start)
+          .containsExactly(
+              at(MONDAY, "18:00"),
+              at(MONDAY.plusDays(1), "18:00"),
+              at(MONDAY.plusDays(2), "18:00"));
+    }
+  }
+
+  @Nested
   class WithRealAvailability {
 
     @Test
