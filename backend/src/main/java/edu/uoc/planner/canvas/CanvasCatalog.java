@@ -84,6 +84,15 @@ public class CanvasCatalog {
         .list();
   }
 
+  /** Codes ("05.557") of the selected courses, also those with no challenges. */
+  @Transactional(readOnly = true)
+  public java.util.Set<String> selectedCourseCodes() {
+    return java.util.Set.copyOf(
+        jdbc.sql("SELECT split_part(code, ' - ', 1) FROM course WHERE selected")
+            .query(String.class)
+            .list());
+  }
+
   /** A finished challenge ({@code DONE}) keeps its status. */
   @Transactional
   public void updateStatus(long challengeId, ChallengeStatus status) {

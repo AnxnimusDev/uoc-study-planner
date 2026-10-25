@@ -237,6 +237,17 @@ class GreedyPlannerTest {
     }
 
     @Test
+    void neverFlagsAChallengeForTimeThatHasNone() {
+      PlanTask weekly =
+          task("weekly").hours(10).due(MONDAY.plusDays(1)).margin(0).challenge(0).build();
+
+      Plan plan = plan(List.of(weekly), evenings(14));
+
+      assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).containsExactly("weekly");
+      assertThat(plan.atRiskChallengeIds()).isEmpty();
+    }
+
+    @Test
     void marksTheChallengeAtRiskInsteadOfTrimming() {
       PlanTask task = task("t1").hours(10).due(MONDAY.plusDays(1)).margin(0).challenge(7).build();
 

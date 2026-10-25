@@ -154,7 +154,13 @@ public final class GreedyPlanner implements Planner {
     Duration unscheduled =
         atRisk.stream().map(AtRiskTask::missing).reduce(Duration.ZERO, Duration::plus);
     List<Long> riskyChallenges =
-        new ArrayList<>(new TreeSet<>(atRisk.stream().map(AtRiskTask::challengeId).toList()));
+        new ArrayList<>(
+            new TreeSet<>(
+                atRisk.stream()
+                    .map(AtRiskTask::challengeId)
+                    // challengeId 0: time with no challenge (ADR 0007), never flags one.
+                    .filter(id -> id != 0)
+                    .toList()));
     return new Plan(sessions, atRisk, notices, deferredOrder, riskyChallenges, unscheduled);
   }
 

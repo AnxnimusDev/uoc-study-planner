@@ -6,8 +6,14 @@ import edu.uoc.planner.canvas.StoredChallenge;
 import edu.uoc.planner.extraction.ChallengeSpec;
 import edu.uoc.planner.extraction.ChallengeSpec.TaskKind;
 import edu.uoc.planner.planning.PlanTask;
+import edu.uoc.planner.scheduling.PlanRun;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,6 +34,7 @@ import java.util.regex.Pattern;
  *       from the course start.
  *   <li>External (Wiris) quizzes the spec does not cover become 45-minute quizzes.
  *   <li>Anything already due is left out: submissions are not read yet, so it may be done.
+ *   <li>Weekly study time (ADR 0007): one task per week of the horizon, Monday to Sunday.
  * </ul>
  */
 public final class PlanTaskAdapter {
@@ -37,24 +44,38 @@ public final class PlanTaskAdapter {
 
   /**
    * @param unestimated deliverables with no spec and no default duration, "05.557 · name"
+   * @param unknownWeeklyCourses {@code weeklyStudy} codes that are not a selected course
    */
-  public record Result(List<PlanTask> tasks, List<String> unestimated) {}
+  public record Result(
+      List<PlanTask> tasks, List<String> unestimated, List<String> unknownWeeklyCourses) {}
 
   private PlanTaskAdapter() {}
 
+  /**
+   * @param selectedCourses codes of the selected courses, for the weekly study time
+   */
   public static Result adapt(
       List<StoredChallenge> challenges,
       Map<Long, ChallengeSpec> specs,
       AvailabilityProfile profile,
+      Set<String> selectedCourses,
       Instant now) {
     List<PlanTask> tasks = new ArrayList<>();
     List<String> unestimated = new ArrayList<>();
     for (StoredChallenge challenge : challenges) {
       adaptChallenge(challenge, specs.get(challenge.id()), profile, tasks, unestimated);
     }
+    List<String> unknown = new ArrayList<>();
+    for (AvailabilityProfile.WeeklyStudy weekly : profile.weeklyStudy()) {
+      if (selectedCourses.contains(weekly.course())) {
+        tasks.addAll(weeklyTasks(weekly, profile.zone(), now));
+      } else if (!unknown.contains(weekly.course())) {
+        unknown.add(weekly.course());
+      }
+    }
     List<PlanTask> open =
         tasks.stream().filter(t -> t.dueAt() == null || t.dueAt().isAfter(now)).toList();
-    return new Result(open, unestimated);
+    return new Result(open, unestimated, unknown);
   }
 
   private static void adaptChallenge(
@@ -144,6 +165,49 @@ public final class PlanTaskAdapter {
         unestimated.add(course + " · " + d.name());
       }
     }
+  }
+
+  /**
+   * One task per ISO week whose Monday falls before the end of the planning horizon. Lowest
+   * priority (weight 0) and no margin: it only competes with work due the same week.
+   */
+  private static List<PlanTask> weeklyTasks(
+      AvailabilityProfile.WeeklyStudy weekly, ZoneId zone, Instant now) {
+    String title =
+        weekly.title() == null || weekly.title().isBlank()
+            ? "Tiempo semanal · " + weekly.course()
+            : weekly.title();
+    Instant horizonEnd = now.plus(Duration.ofDays(7L * PlanRun.HORIZON_WEEKS));
+    List<PlanTask> tasks = new ArrayList<>();
+    LocalDate monday =
+        now.atZone(zone).toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    for (;
+        monday.atStartOfDay(zone).toInstant().isBefore(horizonEnd);
+        monday = monday.plusWeeks(1)) {
+      String week =
+          String.format(
+              "%d-W%02d",
+              monday.get(IsoFields.WEEK_BASED_YEAR), monday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+      tasks.add(
+          new PlanTask(
+              "weekly:" + weekly.course() + ":" + week,
+              0,
+              weekly.course(),
+              0,
+              0,
+              title,
+              TaskKind.READING,
+              Duration.ofMinutes(weekly.minutes()),
+              monday.atStartOfDay(zone).toInstant(),
+              monday.plusWeeks(1).atStartOfDay(zone).toInstant().minusSeconds(1),
+              0,
+              null,
+              List.of(),
+              0,
+              null,
+              false));
+    }
+    return tasks;
   }
 
   /** End of the N-th 7-day block from the course start, for titles such as "Setmana 3". */

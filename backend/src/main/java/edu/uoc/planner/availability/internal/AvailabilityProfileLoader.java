@@ -148,6 +148,29 @@ public final class AvailabilityProfileLoader {
     optionalMap(deadlines, "perCourse")
         .forEach((code, days) -> perCourse.put(code, integer(days, "deadlines.perCourse." + code)));
 
+    List<AvailabilityProfile.WeeklyStudy> weekly = new ArrayList<>();
+    for (Object value : list(root.get("weeklyStudy"), "weeklyStudy")) {
+      Map<String, Object> entry = map(value, "weeklyStudy");
+      Object course = entry.get("course");
+      if (!(course instanceof String code) || code.isBlank()) {
+        throw new AvailabilityConfigException(
+            "weeklyStudy: cada entrada necesita course con el código de la asignatura, como \"20.043\"");
+      }
+      int minutes = integer(entry.get("minutes"), "weeklyStudy " + code + ".minutes");
+      if (minutes <= 0 || minutes > 600) {
+        throw new AvailabilityConfigException(
+            "weeklyStudy "
+                + code
+                + ".minutes debe estar entre 1 y 600 (se ha leído "
+                + minutes
+                + ")");
+      }
+      Object title = entry.get("title");
+      weekly.add(
+          new AvailabilityProfile.WeeklyStudy(
+              code.strip(), minutes, title == null ? null : String.valueOf(title).strip()));
+    }
+
     return new AvailabilityProfile(
         zone,
         workDays,
@@ -162,7 +185,8 @@ public final class AvailabilityProfileLoader {
         maxDaily,
         noStudy,
         defaultMargin,
-        perCourse);
+        perCourse,
+        weekly);
   }
 
   private static ZoneId zone(Object value) {

@@ -29,8 +29,8 @@ public class PlanStore {
              split_part(co.code, ' - ', 1) AS course
       FROM study_session s
       JOIN task t ON t.id = s.task_id
-      JOIN challenge c ON c.id = t.challenge_id
-      JOIN course co ON co.canvas_id = c.course_id
+      LEFT JOIN challenge c ON c.id = t.challenge_id
+      JOIN course co ON co.canvas_id = coalesce(c.course_id, t.course_id)
       """;
 
   private final JdbcClient jdbc;
@@ -63,6 +63,7 @@ public class PlanStore {
           task.id(),
           upsertTask(
               task.challengeId(),
+              task.courseCode(),
               task.id(),
               task.title(),
               task.kind(),
@@ -83,7 +84,14 @@ public class PlanStore {
             ids.put(
                 id,
                 upsertTask(
-                    s.challengeId(), id, s.title(), s.kind(), extraTime.get(id), null, null)));
+                    s.challengeId(),
+                    s.courseCode(),
+                    id,
+                    s.title(),
+                    s.kind(),
+                    extraTime.get(id),
+                    null,
+                    null)));
     for (PlanTask task : tasks) {
       Long[] dependsOn =
           task.dependsOn().stream().map(ids::get).filter(d -> d != null).toArray(Long[]::new);
@@ -168,32 +176,53 @@ public class PlanStore {
         .list();
   }
 
+  /**
+   * @param challengeId 0 for time with no challenge (ADR 0007): stored against its course instead
+   */
   private long upsertTask(
       long challengeId,
+      String courseCode,
       String taskId,
       String title,
       TaskKind kind,
       Duration estimate,
       Instant softDeadline,
       Instant hardDeadline) {
+    boolean ofCourse = challengeId == 0;
+    Long courseId = ofCourse ? courseId(courseCode) : null;
+    String key = ofCourse ? "course_id" : "challenge_id";
     return jdbc.sql(
             """
-            INSERT INTO task (challenge_id, spec_task_id, title, kind, estimated_hours,
+            INSERT INTO task (challenge_id, course_id, spec_task_id, title, kind, estimated_hours,
                               soft_deadline, hard_deadline)
-            VALUES (:challenge, :id, :title, :kind, :hours, :soft, :hard)
-            ON CONFLICT (challenge_id, spec_task_id) DO UPDATE
+            VALUES (:challenge, :course, :id, :title, :kind, :hours, :soft, :hard)
+            ON CONFLICT (%s, spec_task_id) DO UPDATE
               SET title = EXCLUDED.title, kind = EXCLUDED.kind,
                   estimated_hours = EXCLUDED.estimated_hours,
                   soft_deadline = EXCLUDED.soft_deadline, hard_deadline = EXCLUDED.hard_deadline
             RETURNING id
-            """)
-        .param("challenge", challengeId)
+            """
+                .formatted(key))
+        .param("challenge", ofCourse ? null : challengeId)
+        .param("course", courseId)
         .param("id", taskId)
         .param("title", title)
         .param("kind", kind.name())
         .param("hours", hours(estimate).max(new BigDecimal("0.01")))
         .param("soft", softDeadline == null ? null : Timestamp.from(softDeadline))
         .param("hard", hardDeadline == null ? null : Timestamp.from(hardDeadline))
+        .query(Long.class)
+        .single();
+  }
+
+  /** "20.043" → the course's {@code canvas_id}; a selected one wins if a code repeats. */
+  private long courseId(String courseCode) {
+    return jdbc.sql(
+            """
+            SELECT canvas_id FROM course WHERE split_part(code, ' - ', 1) = :code
+            ORDER BY selected DESC, canvas_id DESC LIMIT 1
+            """)
+        .param("code", courseCode)
         .query(Long.class)
         .single();
   }
