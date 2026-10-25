@@ -491,6 +491,38 @@ class GreedyPlannerTest {
       assertThat(total(plan, "t1")).isEqualTo(Duration.ofHours(2));
       assertNoOverlaps(plan);
     }
+
+    @Test
+    void dropsKeptSessionsThatAreNoLongerFreeTime() {
+      PlannedSession morning = kept("t1", at(MONDAY, "07:00"), at(MONDAY, "08:00"));
+      PlanTask task = task("t1").kind(TaskKind.READING).hours(2).build();
+      List<FreeSlot> slots = evenings(14);
+
+      Plan plan =
+          planner.plan(
+              new PlanRequest(NOW, MADRID, List.of(task), slots, LIMITS, 6, List.of(morning)));
+
+      assertThat(plan.sessions()).doesNotContain(morning);
+      assertThat(total(plan, "t1")).isEqualTo(Duration.ofHours(2));
+      assertInsideSlots(plan, slots);
+    }
+
+    @Test
+    void dropsKeptSessionsOverTheDailyLimit() {
+      PlannedSession first = kept("t1", at(MONDAY, "18:00"), at(MONDAY, "19:00"));
+      PlannedSession second = kept("t1", at(MONDAY, "19:15"), at(MONDAY, "20:15"));
+      PlanLimits limits = new PlanLimits(30, 120, 3.0, Map.of(DayOfWeek.MONDAY, 1.5));
+      PlanTask task = task("t1").kind(TaskKind.READING).hours(3).build();
+
+      Plan plan =
+          planner.plan(
+              new PlanRequest(
+                  NOW, MADRID, List.of(task), evenings(14), limits, 6, List.of(first, second)));
+
+      assertThat(plan.sessions()).contains(first).doesNotContain(second);
+      assertThat(perDay(plan).get(MONDAY)).isLessThanOrEqualTo(Duration.ofMinutes(90));
+      assertThat(total(plan, "t1")).isEqualTo(Duration.ofHours(3));
+    }
   }
 
   @Nested
@@ -639,6 +671,10 @@ class GreedyPlannerTest {
   private static void assertDailyLimit(Plan plan) {
     assertThat(perDay(plan).values())
         .allSatisfy(d -> assertThat(d).isLessThanOrEqualTo(Duration.ofHours(3)));
+  }
+
+  private static PlannedSession kept(String taskId, Instant start, Instant end) {
+    return new PlannedSession(taskId, 1, "05.557", "Llegir", TaskKind.READING, start, end, true);
   }
 
   private static Map<LocalDate, Duration> perDay(Plan plan) {
