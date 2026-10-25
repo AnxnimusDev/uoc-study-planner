@@ -46,6 +46,9 @@ public final class GreedyPlanner implements Planner {
     Map<String, Duration> keptTime = new HashMap<>();
     Map<String, Instant> keptEnd = new HashMap<>();
     for (PlannedSession kept : request.keptSessions()) {
+      if (!fits(capacity, kept, request.limits())) {
+        continue;
+      }
       capacity.reserve(kept.start(), kept.end(), kept.courseCode());
       sessions.add(kept);
       keptTime.merge(kept.taskId(), kept.duration(), Duration::plus);
@@ -285,6 +288,26 @@ public final class GreedyPlanner implements Planner {
       return null;
     }
     return task.dueAt().atZone(request.zone()).minusDays(task.marginDays()).toInstant();
+  }
+
+  /**
+   * A kept session stays only if it is still free time within its day's limit: availability may
+   * have changed since the previous plan. Otherwise its time is planned again.
+   */
+  private static boolean fits(Capacity capacity, PlannedSession kept, PlanLimits limits) {
+    long minutes = kept.duration().toMinutes();
+    return capacity
+        .find(
+            kept.start(),
+            kept.end(),
+            minutes,
+            minutes,
+            false,
+            false,
+            kept.courseCode(),
+            limits::maxDailyMinutes)
+        .filter(spot -> spot.start().equals(kept.start()) && spot.minutes() == minutes)
+        .isPresent();
   }
 
   private static Duration remaining(PlanTask task, Map<String, Duration> keptTime) {
