@@ -107,6 +107,21 @@ final class Capacity {
     return Optional.empty();
   }
 
+  /** Free minutes left on a day, capped by what remains of its study limit. */
+  long freeMinutes(LocalDate day, long maxDailyMinutes) {
+    Instant from = day.atStartOfDay(zone).toInstant();
+    Instant to = endOfDay(day);
+    long free = 0;
+    for (Window w : this.free) {
+      Instant start = w.start().isBefore(from) ? from : w.start();
+      Instant end = min(w.end(), to);
+      if (start.isBefore(end)) {
+        free += Duration.between(start, end).toMinutes();
+      }
+    }
+    return Math.max(0, Math.min(free, maxDailyMinutes - studied.getOrDefault(day, 0L)));
+  }
+
   /** Takes a session (and the break after it) out of the free time. */
   void reserve(Instant start, Instant end, String course) {
     LocalDate day = day(start);

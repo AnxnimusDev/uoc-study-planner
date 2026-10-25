@@ -9,8 +9,12 @@ import edu.uoc.planner.planning.PlanRequest;
 import edu.uoc.planner.planning.PlanTask;
 import edu.uoc.planner.planning.PlannedSession;
 import edu.uoc.planner.planning.Planner;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,24 +44,35 @@ public final class GreedyPlanner implements Planner {
 
   @Override
   public Plan plan(PlanRequest request) {
-    Instant horizonEnd = request.now().plus(Duration.ofDays(7L * request.horizonWeeks()));
+    List<PlanTask> tasks = withReviews(request.tasks(), request.limits());
+    Map<String, PlanTask> byId = new LinkedHashMap<>();
+    tasks.forEach(t -> byId.put(t.id(), t));
+    List<PlanTask> order = dependencyOrder(tasks, byId, request);
+
+    Plan plan = plan(request, byId, order, request.keptSessions());
+    if (plan.atRisk().isEmpty()) {
+      return plan;
+    }
+    // ADR 0008: not everything fits, so each course gets a share of every week first (phase A);
+    // those sessions are then kept while the rest is planned as usual (phase B).
+    return plan(request, byId, order, shareOut(request, byId, order));
+  }
+
+  private Plan plan(
+      PlanRequest request,
+      Map<String, PlanTask> byId,
+      List<PlanTask> order,
+      List<PlannedSession> keptSessions) {
+    Instant horizonEnd = horizonEnd(request);
     Capacity capacity = Capacity.of(request.slots(), request.now(), horizonEnd, request.zone());
     List<PlannedSession> sessions = new ArrayList<>();
     Map<String, Duration> keptTime = new HashMap<>();
     Map<String, Instant> keptEnd = new HashMap<>();
-    for (PlannedSession kept : request.keptSessions()) {
-      if (!fits(capacity, kept, request.limits())) {
-        continue;
-      }
-      capacity.reserve(kept.start(), kept.end(), kept.courseCode());
+    for (PlannedSession kept : keep(capacity, keptSessions, byId, request.limits())) {
       sessions.add(kept);
       keptTime.merge(kept.taskId(), kept.duration(), Duration::plus);
       keptEnd.merge(kept.taskId(), kept.end(), (a, b) -> a.isAfter(b) ? a : b);
     }
-
-    List<PlanTask> tasks = withReviews(request.tasks(), request.limits());
-    Map<String, PlanTask> byId = new LinkedHashMap<>();
-    tasks.forEach(t -> byId.put(t.id(), t));
 
     Map<String, Instant> finished = new HashMap<>();
     Set<String> satisfied = new HashSet<>();
@@ -67,7 +82,7 @@ public final class GreedyPlanner implements Planner {
     List<Notice> notices = new ArrayList<>();
     List<String> deferredOrder = new ArrayList<>();
 
-    for (PlanTask task : dependencyOrder(tasks, byId, request)) {
+    for (PlanTask task : order) {
       if (task.kind() == TaskKind.VIDEO_RECORDING) {
         notices.add(
             new Notice(
@@ -109,7 +124,7 @@ public final class GreedyPlanner implements Planner {
         continue;
       }
       Instant deadline = effectiveDeadline(task, request);
-      if (deadline != null && !deadline.isAfter(earliest) && task.dueAt().isAfter(earliest)) {
+      if (marginSkipped(task, deadline, earliest)) {
         notices.add(
             new Notice(
                 task.id(),
@@ -148,7 +163,14 @@ public final class GreedyPlanner implements Planner {
         deferred.add(task.id());
         deferredOrder.add(task.id());
       } else {
-        risk(atRisk, blocked, task, Duration.ofMinutes(remaining), "No cabe antes del plazo");
+        risk(
+            atRisk,
+            blocked,
+            task,
+            Duration.ofMinutes(remaining),
+            task.kind() == TaskKind.QUIZ
+                ? "No hay " + remaining + " min seguidos antes del plazo"
+                : "No cabe antes del plazo");
       }
     }
 
@@ -182,6 +204,20 @@ public final class GreedyPlanner implements Planner {
       PlanLimits limits,
       List<PlannedSession> out) {
     long min = limits.minSessionMinutes();
+    if (task.kind() == TaskKind.QUIZ) {
+      Optional<Capacity.Spot> whole =
+          capacity.find(
+              earliest,
+              tier.latest(),
+              remaining,
+              remaining,
+              tier.preferredOnly(),
+              tier.courseLimit(),
+              task.courseCode(),
+              limits::maxDailyMinutes);
+      whole.ifPresent(spot -> out.add(reserve(capacity, task, spot)));
+      return whole.isPresent() ? 0 : remaining;
+    }
     while (remaining > 0) {
       long left = remaining;
       long desired = desiredSession(remaining, limits);
@@ -212,20 +248,210 @@ public final class GreedyPlanner implements Planner {
       if (spot.isEmpty() || spot.get().minutes() <= 0) {
         break;
       }
-      Instant start = spot.get().start();
-      Instant end = start.plus(Duration.ofMinutes(spot.get().minutes()));
-      capacity.reserve(start, end, task.courseCode());
-      out.add(
-          new PlannedSession(
-              task.id(),
-              task.challengeId(),
-              task.courseCode(),
-              task.title(),
-              task.kind(),
-              start,
-              end,
-              false));
+      out.add(reserve(capacity, task, spot.get()));
       remaining -= spot.get().minutes();
+    }
+    return remaining;
+  }
+
+  private static PlannedSession reserve(Capacity capacity, PlanTask task, Capacity.Spot spot) {
+    Instant start = spot.start();
+    Instant end = start.plus(Duration.ofMinutes(spot.minutes()));
+    capacity.reserve(start, end, task.courseCode());
+    return new PlannedSession(
+        task.id(),
+        task.challengeId(),
+        task.courseCode(),
+        task.title(),
+        task.kind(),
+        start,
+        end,
+        false);
+  }
+
+  /**
+   * Phase A of ADR 0008: every week of the horizon is shared among the courses with work open in
+   * it, in proportion to that work times (1 + challenge weight / 100), at least one minimum session
+   * each. Tasks go in the usual order and only take what is left of their course's share of each
+   * week. Returns the kept sessions plus the ones placed here.
+   */
+  private static List<PlannedSession> shareOut(
+      PlanRequest request, Map<String, PlanTask> byId, List<PlanTask> order) {
+    PlanLimits limits = request.limits();
+    Instant horizonEnd = horizonEnd(request);
+    Capacity capacity = Capacity.of(request.slots(), request.now(), horizonEnd, request.zone());
+    List<PlannedSession> sessions =
+        new ArrayList<>(keep(capacity, request.keptSessions(), byId, limits));
+    Map<String, Duration> keptTime = new HashMap<>();
+    Map<String, Instant> keptEnd = new HashMap<>();
+    for (PlannedSession kept : sessions) {
+      keptTime.merge(kept.taskId(), kept.duration(), Duration::plus);
+      keptEnd.merge(kept.taskId(), kept.end(), (a, b) -> a.isAfter(b) ? a : b);
+    }
+    // Only tasks with nothing left count as finished: their dependents may start after them.
+    Map<String, Instant> finished = new HashMap<>();
+    keptEnd.forEach(
+        (id, end) -> {
+          if (byId.containsKey(id) && remaining(byId.get(id), keptTime).isZero()) {
+            finished.put(id, end);
+          }
+        });
+
+    Map<String, Map<LocalDate, Double>> pending = new HashMap<>();
+    List<LocalDate> weeks = weeks(request, horizonEnd);
+    for (PlanTask task : order) {
+      long minutes = remaining(task, keptTime).toMinutes();
+      if (task.kind() == TaskKind.VIDEO_RECORDING || minutes == 0) {
+        continue;
+      }
+      Instant opens =
+          task.opensAt() != null && task.opensAt().isAfter(request.now())
+              ? task.opensAt()
+              : request.now();
+      Instant latest = latest(task, request, opens, horizonEnd);
+      for (LocalDate week : weeks) {
+        // Open in the week: opens before it ends and is due after it starts.
+        if (opens.isBefore(start(week.plusDays(7), request.zone()))
+            && latest.isAfter(start(week, request.zone()))) {
+          pending
+              .computeIfAbsent(task.courseCode(), c -> new HashMap<>())
+              .merge(week, minutes * (1 + task.challengeWeightPct() / 100), Double::sum);
+        }
+      }
+    }
+    Map<String, Map<LocalDate, Long>> quota = new HashMap<>();
+    for (LocalDate week : weeks) {
+      long weekCapacity = 0;
+      for (int d = 0; d < 7; d++) {
+        LocalDate day = week.plusDays(d);
+        weekCapacity += capacity.freeMinutes(day, limits.maxDailyMinutes(day.getDayOfWeek()));
+      }
+      double total = pending.values().stream().mapToDouble(m -> m.getOrDefault(week, 0.0)).sum();
+      for (Map.Entry<String, Map<LocalDate, Double>> course : pending.entrySet()) {
+        double share = course.getValue().getOrDefault(week, 0.0);
+        if (share > 0) {
+          long minutes =
+              Math.max(limits.minSessionMinutes(), Math.round(weekCapacity * share / total));
+          quota.computeIfAbsent(course.getKey(), c -> new HashMap<>()).put(week, minutes);
+        }
+      }
+    }
+
+    for (PlanTask task : order) {
+      long remaining = remaining(task, keptTime).toMinutes();
+      boolean ready =
+          task.dependsOn().stream()
+              .filter(byId::containsKey)
+              .allMatch(
+                  d -> finished.containsKey(d) || byId.get(d).kind() == TaskKind.VIDEO_RECORDING);
+      if (task.kind() == TaskKind.VIDEO_RECORDING
+          || remaining == 0
+          || !ready
+          || (task.dueAt() != null && !task.dueAt().isAfter(request.now()))) {
+        continue;
+      }
+      Instant earliest = earliest(task, request.now(), finished, byId);
+      if (!earliest.isBefore(horizonEnd)) {
+        continue;
+      }
+      Instant latest = latest(task, request, earliest, horizonEnd);
+      Map<LocalDate, Long> share = quota.getOrDefault(task.courseCode(), Map.of());
+      // The most the hard limits allow, then the most preferred tier that still places that much.
+      List<Tier> tiers = tiers(task, latest);
+      long most =
+          remaining
+              - placeWithinQuota(
+                  capacity.copy(),
+                  task,
+                  earliest,
+                  tiers.getLast(),
+                  remaining,
+                  limits,
+                  new HashMap<>(share),
+                  request.zone(),
+                  new ArrayList<>());
+      List<PlannedSession> placed = new ArrayList<>();
+      for (Tier tier : tiers) {
+        Capacity attempt = capacity.copy();
+        Map<LocalDate, Long> left = new HashMap<>(share);
+        List<PlannedSession> attemptSessions = new ArrayList<>();
+        long unplaced =
+            placeWithinQuota(
+                attempt,
+                task,
+                earliest,
+                tier,
+                remaining,
+                limits,
+                left,
+                request.zone(),
+                attemptSessions);
+        if (remaining - unplaced >= most || tier.equals(tiers.getLast())) {
+          capacity = attempt;
+          quota.computeIfAbsent(task.courseCode(), c -> new HashMap<>()).putAll(left);
+          placed = attemptSessions;
+          remaining = unplaced;
+          break;
+        }
+      }
+      sessions.addAll(placed);
+      placed.forEach(p -> keptTime.merge(p.taskId(), p.duration(), Duration::plus));
+      if (remaining == 0 && !placed.isEmpty()) {
+        Instant end = placed.stream().map(PlannedSession::end).max(Comparator.naturalOrder()).get();
+        finished.merge(task.id(), end, (a, b) -> a.isAfter(b) ? a : b);
+      }
+    }
+    return sessions;
+  }
+
+  /**
+   * Like {@link #place}, but each session also fits in what is left of the course's share of its
+   * week; a week with no share left is skipped. Quizzes still go whole or not at all.
+   */
+  private static long placeWithinQuota(
+      Capacity capacity,
+      PlanTask task,
+      Instant earliest,
+      Tier tier,
+      long remaining,
+      PlanLimits limits,
+      Map<LocalDate, Long> quota,
+      ZoneId zone,
+      List<PlannedSession> out) {
+    long min = limits.minSessionMinutes();
+    boolean quiz = task.kind() == TaskKind.QUIZ;
+    Instant from = earliest;
+    while (remaining > 0 && from.isBefore(tier.latest())) {
+      long least = quiz ? remaining : Math.min(min, remaining);
+      long most = quiz ? remaining : desiredSession(remaining, limits);
+      Optional<Capacity.Spot> spot =
+          capacity.find(
+              from,
+              tier.latest(),
+              least,
+              most,
+              tier.preferredOnly(),
+              tier.courseLimit(),
+              task.courseCode(),
+              limits::maxDailyMinutes);
+      if (spot.isEmpty()) {
+        break;
+      }
+      LocalDate week = monday(spot.get().start(), zone);
+      long share = quota.getOrDefault(week, 0L);
+      long minutes = Math.min(spot.get().minutes(), share);
+      long tail = remaining - minutes;
+      if (tail > 0 && tail < min) {
+        minutes = remaining - min;
+      }
+      if (minutes < least) {
+        from = start(week.plusDays(7), zone);
+        continue;
+      }
+      Capacity.Spot taken = new Capacity.Spot(spot.get().start(), minutes);
+      out.add(reserve(capacity, task, taken));
+      quota.put(week, share - minutes);
+      remaining -= minutes;
     }
     return remaining;
   }
@@ -281,6 +507,72 @@ public final class GreedyPlanner implements Planner {
       }
     }
     return earliest;
+  }
+
+  private static Instant horizonEnd(PlanRequest request) {
+    return request.now().plus(Duration.ofDays(7L * request.horizonWeeks()));
+  }
+
+  /** No margin left before the real deadline: plan up to the deadline itself. */
+  private static boolean marginSkipped(PlanTask task, Instant deadline, Instant earliest) {
+    return deadline != null && !deadline.isAfter(earliest) && task.dueAt().isAfter(earliest);
+  }
+
+  /** The end of a task's window, as in the main loop: margin, margin fallback, horizon. */
+  private static Instant latest(
+      PlanTask task, PlanRequest request, Instant earliest, Instant horizonEnd) {
+    Instant deadline = effectiveDeadline(task, request);
+    if (marginSkipped(task, deadline, earliest)) {
+      deadline = task.dueAt();
+    }
+    return deadline == null || deadline.isAfter(horizonEnd) ? horizonEnd : deadline;
+  }
+
+  /** Mondays of the weeks the horizon touches. */
+  private static List<LocalDate> weeks(PlanRequest request, Instant horizonEnd) {
+    List<LocalDate> weeks = new ArrayList<>();
+    for (LocalDate week = monday(request.now(), request.zone());
+        start(week, request.zone()).isBefore(horizonEnd);
+        week = week.plusDays(7)) {
+      weeks.add(week);
+    }
+    return weeks;
+  }
+
+  private static LocalDate monday(Instant instant, ZoneId zone) {
+    return instant
+        .atZone(zone)
+        .toLocalDate()
+        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+  }
+
+  private static Instant start(LocalDate day, ZoneId zone) {
+    return day.atStartOfDay(zone).toInstant();
+  }
+
+  /**
+   * Reserves the kept sessions that still fit (see {@link #fits}). A quiz piece shorter than the
+   * whole quiz is dropped: quizzes go in one session (ADR 0008).
+   */
+  private static List<PlannedSession> keep(
+      Capacity capacity,
+      List<PlannedSession> keptSessions,
+      Map<String, PlanTask> byId,
+      PlanLimits limits) {
+    List<PlannedSession> kept = new ArrayList<>();
+    for (PlannedSession session : keptSessions) {
+      PlanTask task = byId.get(session.taskId());
+      boolean quizPiece =
+          task != null
+              && task.kind() == TaskKind.QUIZ
+              && session.duration().compareTo(task.estimate()) < 0;
+      if (quizPiece || !fits(capacity, session, limits)) {
+        continue;
+      }
+      capacity.reserve(session.start(), session.end(), session.courseCode());
+      kept.add(session);
+    }
+    return kept;
   }
 
   private static Instant effectiveDeadline(PlanTask task, PlanRequest request) {
