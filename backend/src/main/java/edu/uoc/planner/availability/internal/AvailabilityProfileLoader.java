@@ -139,6 +139,18 @@ public final class AvailabilityProfileLoader {
       throw new AvailabilityConfigException(
           "studyPreferences.maxDailyHours debe dejar al menos una sesión mínima al día");
     }
+    Map<DayOfWeek, Double> maxDailyPerDay = new EnumMap<>(DayOfWeek.class);
+    optionalMap(study, "maxDailyHoursPerDay")
+        .forEach(
+            (day, value) -> {
+              String field = "studyPreferences.maxDailyHoursPerDay." + day;
+              double hours = number(value, field);
+              if (hours <= 0 || hours * 60 < minSession) {
+                throw new AvailabilityConfigException(
+                    field + " debe dejar al menos una sesión mínima (" + minSession + " min)");
+              }
+              maxDailyPerDay.put(day(day, field), hours);
+            });
     Set<DayOfWeek> noStudy = days(study.getOrDefault("noStudyDays", List.of()), "noStudyDays");
 
     Map<String, Object> deadlines = optionalMap(root, "deadlines");
@@ -183,6 +195,7 @@ public final class AvailabilityProfileLoader {
         minSession,
         maxSession,
         maxDaily,
+        maxDailyPerDay,
         noStudy,
         defaultMargin,
         perCourse,

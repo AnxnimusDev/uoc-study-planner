@@ -13,6 +13,7 @@ import java.util.Set;
  *
  * @param lunch break on work days only; may be null
  * @param maxSessionMinutes and {@code maxDailyHours} are limits for the planner, not for free time
+ * @param maxDailyHoursPerDay weekdays whose limit differs from {@code maxDailyHours}
  * @param marginDaysPerCourse course code ("05.557") → days before {@code due_at} to finish
  * @param weeklyStudy time reserved every week per course (ADR 0007)
  */
@@ -28,6 +29,7 @@ public record AvailabilityProfile(
     int minSessionMinutes,
     int maxSessionMinutes,
     double maxDailyHours,
+    Map<DayOfWeek, Double> maxDailyHoursPerDay,
     Set<DayOfWeek> noStudyDays,
     int defaultMarginDays,
     Map<String, Integer> marginDaysPerCourse,
@@ -37,9 +39,15 @@ public record AvailabilityProfile(
     workDays = workDays.isEmpty() ? Map.of() : Map.copyOf(new EnumMap<>(workDays));
     fixedActivities = List.copyOf(fixedActivities);
     preferredSlots = List.copyOf(preferredSlots);
+    maxDailyHoursPerDay = maxDailyHoursPerDay == null ? Map.of() : Map.copyOf(maxDailyHoursPerDay);
     noStudyDays = Set.copyOf(noStudyDays);
     marginDaysPerCourse = Map.copyOf(marginDaysPerCourse);
     weeklyStudy = weeklyStudy == null ? List.of() : List.copyOf(weeklyStudy);
+  }
+
+  /** Study limit for a weekday: its own value or {@link #maxDailyHours()}. */
+  public double maxDailyHours(DayOfWeek day) {
+    return maxDailyHoursPerDay.getOrDefault(day, maxDailyHours);
   }
 
   /** Days of margin before the real deadline for a course, or the default. */
@@ -63,6 +71,7 @@ public record AvailabilityProfile(
         minSessionMinutes,
         maxSessionMinutes,
         maxDailyHours,
+        maxDailyHoursPerDay,
         noStudyDays,
         defaultMarginDays,
         marginDaysPerCourse,
@@ -82,6 +91,7 @@ public record AvailabilityProfile(
         minSessionMinutes,
         maxSessionMinutes,
         maxDailyHours,
+        maxDailyHoursPerDay,
         noStudyDays,
         defaultMarginDays,
         marginDaysPerCourse,
@@ -101,6 +111,7 @@ public record AvailabilityProfile(
         minSessionMinutes,
         maxSessionMinutes,
         maxDailyHours,
+        maxDailyHoursPerDay,
         days,
         defaultMarginDays,
         marginDaysPerCourse,
@@ -120,6 +131,7 @@ public record AvailabilityProfile(
         minutes,
         maxSessionMinutes,
         maxDailyHours,
+        maxDailyHoursPerDay,
         noStudyDays,
         defaultMarginDays,
         marginDaysPerCourse,
@@ -139,6 +151,7 @@ public record AvailabilityProfile(
         minSessionMinutes,
         maxSessionMinutes,
         maxDailyHours,
+        maxDailyHoursPerDay,
         noStudyDays,
         defaultMarginDays,
         marginDaysPerCourse,

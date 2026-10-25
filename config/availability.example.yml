@@ -33,6 +33,8 @@ studyPreferences:
   minSessionMinutes: 30
   maxSessionMinutes: 120
   maxDailyHours: 3
+  # Tope distinto para algunos días (los que no aparecen usan maxDailyHours):
+  # maxDailyHoursPerDay: { MONDAY: 1.5, FRIDAY: 6.5, SATURDAY: 4, SUNDAY: 4 }
   noStudyDays: []
 
 deadlines:
