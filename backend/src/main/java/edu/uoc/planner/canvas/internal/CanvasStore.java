@@ -81,15 +81,17 @@ class CanvasStore {
     jdbc.sql(
             """
             INSERT INTO deliverable (canvas_assignment_id, challenge_id, name, unlock_at, due_at,
-                                     lock_at, points, counts_for_grade, submission_types)
+                                     lock_at, points, counts_for_grade, submission_types,
+                                     submitted)
             VALUES (:id, :challenge, :name, :unlock, :due, :lock, :points, :counts,
-                    string_to_array(:types, ','))
+                    string_to_array(:types, ','), :submitted)
             ON CONFLICT (canvas_assignment_id) DO UPDATE
               SET challenge_id = EXCLUDED.challenge_id, name = EXCLUDED.name,
                   unlock_at = EXCLUDED.unlock_at, due_at = EXCLUDED.due_at,
                   lock_at = EXCLUDED.lock_at, points = EXCLUDED.points,
                   counts_for_grade = EXCLUDED.counts_for_grade,
-                  submission_types = EXCLUDED.submission_types
+                  submission_types = EXCLUDED.submission_types,
+                  submitted = EXCLUDED.submitted
             """)
         .param("id", d.canvasAssignmentId())
         .param("challenge", challengeId)
@@ -100,6 +102,7 @@ class CanvasStore {
         .param("points", d.points())
         .param("counts", d.countsForGrade())
         .param("types", String.join(",", d.submissionTypes()))
+        .param("submitted", d.submitted())
         .update();
   }
 

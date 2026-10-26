@@ -11,6 +11,8 @@ Qué hace:
 - Sustituye nombres de personas por valores fijos.
 - Sustituye el identificador del alumno (id de /users/self y user_id) por 1.
 - Enmascara direcciones de correo y URLs firmadas que aparezcan dentro de textos.
+- En las entregas del alumno (include[]=submission) deja solo el estado: quita contenido, notas,
+  comentarios, corrector y URLs, que llevan el id real del alumno.
 
 Conserva IDs de cursos, módulos, páginas y entregas: son datos institucionales, no personales,
 y los tests los necesitan para resolver relaciones.
@@ -49,6 +51,24 @@ PERSON_NAME_KEYS = {
 
 STUDENT_ID_KEYS = {"user_id", "final_grader_id"}
 
+SUBMISSION_DROP_KEYS = {
+    "body",
+    "url",
+    "preview_url",
+    "grader_id",
+    "grade",
+    "score",
+    "entered_grade",
+    "entered_score",
+    "points_deducted",
+    "attachments",
+    "media_comment",
+    "submission_comments",
+    "discussion_entries",
+    "sticker",
+    "external_tool_url",
+}
+
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 SIGNED_URL_RE = re.compile(r"(verifier|token|sig|signature)=[A-Za-z0-9%._~-]+")
 
@@ -56,6 +76,11 @@ SIGNED_URL_RE = re.compile(r"(verifier|token|sig|signature)=[A-Za-z0-9%._~-]+")
 def looks_like_user(obj: dict[str, Any]) -> bool:
     """Un objeto de usuario de Canvas tiene sortable_name o short_name junto a id."""
     return "id" in obj and ("sortable_name" in obj or "short_name" in obj)
+
+
+def looks_like_submission(obj: dict[str, Any]) -> bool:
+    """Una entrega de Canvas tiene assignment_id, workflow_state y submitted_at."""
+    return {"assignment_id", "workflow_state", "submitted_at"} <= obj.keys()
 
 
 def clean_string(value: str) -> str:
@@ -66,9 +91,10 @@ def clean_string(value: str) -> str:
 def anonymize(node: Any) -> Any:
     if isinstance(node, dict):
         is_user = looks_like_user(node)
+        is_submission = looks_like_submission(node)
         result: dict[str, Any] = {}
         for key, value in node.items():
-            if key in DROP_KEYS:
+            if key in DROP_KEYS or (is_submission and key in SUBMISSION_DROP_KEYS):
                 continue
             if is_user and key in PERSON_NAME_KEYS:
                 result[key] = PERSON_NAME_KEYS[key]

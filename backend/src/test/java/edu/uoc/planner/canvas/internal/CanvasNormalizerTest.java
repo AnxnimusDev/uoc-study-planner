@@ -117,6 +117,34 @@ class CanvasNormalizerTest {
           .extracting(Deliverable::canvasAssignmentId)
           .doesNotContain(2034578L, 2034579L, 2034580L, 2034582L, 2034583L);
     }
+
+    @Test
+    void treatsAssignmentsWithoutASubmissionAsPending() {
+      assertThat(challenges.stream().flatMap(c -> c.deliverables().stream()))
+          .noneMatch(Deliverable::submitted);
+    }
+  }
+
+  @Nested
+  class Submissions {
+
+    private final List<Challenge> challenges =
+        normalizer.challenges(
+            ALGEBRA,
+            read("algebra-modules.json", new TypeReference<>() {}),
+            read("algebra-assignments-submissions.json", new TypeReference<>() {}));
+
+    @Test
+    void marksSubmittedAndGradedDeliverables() {
+      assertThat(deliverable(challenges.getFirst(), 979687L).submitted()).isTrue();
+      assertThat(deliverable(challenges.get(1), 979698L).submitted()).isTrue();
+      assertThat(deliverable(challenges.get(1), 979702L).submitted()).isFalse();
+    }
+
+    @Test
+    void aGradedRecordingIsDoneEvenWithZeroPoints() {
+      assertThat(deliverable(challenges.getFirst(), 979674L).submitted()).isTrue();
+    }
   }
 
   @Nested
@@ -302,6 +330,7 @@ class CanvasNormalizerTest {
         List.of("online_upload"),
         null,
         true,
+        null,
         null);
   }
 }

@@ -20,6 +20,7 @@ Los JSON reales anonimizados están en `backend/src/test/resources/fixtures/canv
 | `GET /api/v1/courses/{id}/modules?include[]=items&per_page=100` | Retos y sus elementos | `algebra-modules.json`, `ipo-modules.json`, `lab-fc-modules.json`, `lab-proto-modules.json`, `english-modules.json` |
 | `GET /api/v1/courses/{id}/pages/{page_url}` | Enunciado y guías | `algebra-page-enunciat-r1.json`, `ipo-page-enunciat-r1.json` |
 | `GET /api/v1/courses/{id}/assignments?per_page=100` | Entregas, fechas, puntos | `algebra-assignments.json`, `lab-fc-assignments.json` y `lab-proto-assignments.json` (vacíos) |
+| `GET /api/v1/courses/{id}/assignments?include[]=submission&per_page=100` | Igual, más el estado de la entrega del alumno | `algebra-assignments-submissions.json` |
 | `GET /api/v1/courses/{id}/assignment_groups` | Grupos y pesos | `algebra-assignment-groups.json` |
 | `GET /api/v1/courses/{id}/assignments/{aid}` | Rúbrica (`rubric`) | pendiente de capturar |
 | `GET /feeds/calendars/course_{uuid}.ics` | Calendario, **sin sesión** | — |
@@ -76,6 +77,10 @@ y un foro evaluable ("Validació de perfil amb IA"). El título de la página de
 - Cuestionarios: `submission_types: ["external_tool"]` (Wiris). `description` vacía o `null`.
 - Muchas entregas tienen `description: null`: el enunciado vive en la página, no en la entrega.
 - `assignment_groups`: "Activitats" (peso 0) y "AC" (peso 100). No sirve para pesos por reto.
+- Con `include[]=submission` cada entrega trae `submission` con `workflow_state` (`unsubmitted`,
+  `submitted`, `graded`, `pending_review`), `submitted_at`, `graded_at`, `missing` y `excused`. Los
+  cuestionarios Wiris también se marcan (`submission_type: basic_lti_launch`, `graded` al terminar).
+  Ojo: un vídeo de autoría puede salir `graded` con nota 0 (R1), así que "entregado" no es "aprobado".
 
 ## Trampas conocidas
 

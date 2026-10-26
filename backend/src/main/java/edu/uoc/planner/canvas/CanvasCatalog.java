@@ -49,7 +49,8 @@ public class CanvasCatalog {
                               ? java.math.BigDecimal.ZERO
                               : rs.getBigDecimal("points"),
                           rs.getBoolean("counts_for_grade"),
-                          strings(rs.getArray("submission_types"))));
+                          strings(rs.getArray("submission_types")),
+                          rs.getBoolean("submitted")));
               return null;
             })
         .list();

@@ -39,6 +39,7 @@ class CanvasFixturesTest {
           Map.entry("algebra-page-enunciat-r1.json", CanvasPage.class),
           Map.entry("ipo-page-enunciat-r1.json", CanvasPage.class),
           Map.entry("algebra-assignments.json", CanvasAssignment.class),
+          Map.entry("algebra-assignments-submissions.json", CanvasAssignment.class),
           Map.entry("algebra-assignment-groups.json", CanvasAssignmentGroup.class),
           Map.entry("lab-fc-modules.json", CanvasModule.class),
           Map.entry("lab-fc-assignments.json", CanvasAssignment.class),

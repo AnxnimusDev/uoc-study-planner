@@ -9,6 +9,7 @@ import java.util.List;
  *
  * @param points {@code points_possible}; zero when Canvas sends none
  * @param countsForGrade {@code !omit_from_final_grade}
+ * @param submitted the student already submitted it (also graded or excused), whatever the grade
  */
 public record Deliverable(
     long canvasAssignmentId,
@@ -18,7 +19,8 @@ public record Deliverable(
     Instant lockAt,
     BigDecimal points,
     boolean countsForGrade,
-    List<String> submissionTypes) {
+    List<String> submissionTypes,
+    boolean submitted) {
 
   public Deliverable {
     submissionTypes = List.copyOf(submissionTypes);
