@@ -551,8 +551,8 @@ public final class GreedyPlanner implements Planner {
   }
 
   /**
-   * Reserves the kept sessions that still fit (see {@link #fits}). A quiz piece shorter than the
-   * whole quiz is dropped: quizzes go in one session (ADR 0008).
+   * Reserves the kept sessions that still fit (see {@link #fits}). Dropped: sessions of tasks no
+   * longer in the request, and quiz pieces shorter than the whole quiz (ADR 0008).
    */
   private static List<PlannedSession> keep(
       Capacity capacity,
@@ -562,10 +562,11 @@ public final class GreedyPlanner implements Planner {
     List<PlannedSession> kept = new ArrayList<>();
     for (PlannedSession session : keptSessions) {
       PlanTask task = byId.get(session.taskId());
+      if (task == null) {
+        continue; // done or gone since the previous plan (e.g. submitted in Canvas)
+      }
       boolean quizPiece =
-          task != null
-              && task.kind() == TaskKind.QUIZ
-              && session.duration().compareTo(task.estimate()) < 0;
+          task.kind() == TaskKind.QUIZ && session.duration().compareTo(task.estimate()) < 0;
       if (quizPiece || !fits(capacity, session, limits)) {
         continue;
       }
