@@ -523,6 +523,19 @@ class GreedyPlannerTest {
       assertThat(perDay(plan).get(MONDAY)).isLessThanOrEqualTo(Duration.ofMinutes(90));
       assertThat(total(plan, "t1")).isEqualTo(Duration.ofHours(3));
     }
+
+    @Test
+    void dropsKeptSessionsOfTasksThatAreNoLongerPlanned() {
+      // "done" was submitted since the previous plan, so it is not in the request any more.
+      PlannedSession done = kept("done", at(MONDAY, "18:00"), at(MONDAY, "19:00"));
+      PlanTask task = task("t1").kind(TaskKind.READING).hours(1).build();
+
+      Plan plan =
+          planner.plan(
+              new PlanRequest(NOW, MADRID, List.of(task), evenings(14), LIMITS, 6, List.of(done)));
+
+      assertThat(plan.sessions()).extracting(PlannedSession::taskId).containsOnly("t1");
+    }
   }
 
   @Nested
