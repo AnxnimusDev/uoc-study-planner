@@ -139,13 +139,17 @@ public final class CanvasClient {
   }
 
   public List<CanvasAssignment> assignments(long courseId) {
-    return getAll(uri("/api/v1/courses/{course}/assignments"), CanvasAssignment.class, courseId);
+    return getAll(
+        uri("/api/v1/courses/{course}/assignments").queryParam("include[]", "submission"),
+        CanvasAssignment.class,
+        courseId);
   }
 
   /** One assignment: for those a module links to but the course list did not return. */
   public CanvasAssignment assignment(long courseId, long assignmentId) {
     return getOne(
         uri("/api/v1/courses/{course}/assignments/{assignment}")
+            .queryParam("include[]", "submission")
             .encode()
             .buildAndExpand(courseId, assignmentId)
             .toUri(),

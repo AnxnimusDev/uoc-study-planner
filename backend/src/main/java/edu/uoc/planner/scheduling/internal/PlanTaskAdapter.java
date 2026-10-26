@@ -33,7 +33,9 @@ import java.util.regex.Pattern;
  *   <li>"Setmana N" in a deliverable title sets the recommended date: end of the N-th 7-day block
  *       from the course start.
  *   <li>External (Wiris) quizzes the spec does not cover become 45-minute quizzes.
- *   <li>Anything already due is left out: submissions are not read yet, so it may be done.
+ *   <li>Submitted work is left out: the tasks of a submitted deliverable and, once every
+ *       deliverable that counts is submitted, the challenge's tasks with no deliverable.
+ *   <li>Anything already due is left out.
  *   <li>Weekly study time (ADR 0007): one task per week of the horizon, Monday to Sunday.
  * </ul>
  */
@@ -109,6 +111,11 @@ public final class PlanTaskAdapter {
             .min(Comparator.naturalOrder())
             .orElse(null);
 
+    List<Deliverable> counting =
+        challenge.deliverables().stream().filter(Deliverable::countsForGrade).toList();
+    boolean challengeDone =
+        !counting.isEmpty() && counting.stream().allMatch(Deliverable::submitted);
+
     Set<String> covered = new HashSet<>();
     if (spec != null) {
       String prefix = challenge.id() + ":";
@@ -117,6 +124,10 @@ public final class PlanTaskAdapter {
         Deliverable d = t.deliverableRef() == null ? null : byRef.get(t.deliverableRef());
         if (d != null) {
           covered.add(t.deliverableRef());
+        }
+        if (d != null ? d.submitted() : challengeDone) {
+          order++;
+          continue;
         }
         out.add(
             new PlanTask(
@@ -139,7 +150,7 @@ public final class PlanTaskAdapter {
       }
     }
     for (Deliverable d : challenge.deliverables()) {
-      if (covered.contains(ref(d))) {
+      if (covered.contains(ref(d)) || d.submitted()) {
         continue;
       }
       if (d.submissionTypes().equals(List.of("external_tool"))) {

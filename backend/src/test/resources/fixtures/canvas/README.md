@@ -10,6 +10,7 @@ Respuestas reales de `aula.uoc.edu` capturadas el 18–19 de octubre de 2026 y a
 | `algebra-tabs.json` | `/api/v1/courses/94063/tabs` | Àlgebra |
 | `algebra-modules.json` | `/api/v1/courses/94063/modules?include[]=items` | Àlgebra (5 retos) |
 | `algebra-assignments.json` | `/api/v1/courses/94063/assignments` | Àlgebra (20 entregas) |
+| `algebra-assignments-submissions.json` | `/api/v1/courses/94063/assignments?include[]=submission` | Àlgebra, con el estado de la entrega del alumno (26/10/2026) |
 | `algebra-assignment-groups.json` | `/api/v1/courses/94063/assignment_groups` | Àlgebra |
 | `algebra-page-enunciat-r1.json` | `/api/v1/courses/94063/pages/enunciat-de-lactivitat-r1` | Àlgebra R1 |
 | `ipo-modules.json` | `/api/v1/courses/92868/modules?include[]=items` | IPO (4 retos) |
@@ -23,6 +24,9 @@ Respuestas reales de `aula.uoc.edu` capturadas el 18–19 de octubre de 2026 y a
 Valores útiles para aserciones:
 
 - Àlgebra: pesos por reto 15/15/15/15/40; Q2–Q5 con `due_at` 2026-10-30T22:59:59Z.
+- Àlgebra con entregas: Q1 (979687) y Q2 (979698) `graded`, R1 vídeo (979674) `graded`, las dos
+  pruebas iniciales `submitted`; el resto `unsubmitted`. Los cuestionarios Wiris también se marcan.
+  De la entrega solo se conserva el estado (sin contenido, nota, corrector ni URLs).
 - IPO R1: entrega `content_id` 968028; el HTML enlaza a la entrega del curso 87921 (enlace obsoleto).
 - Àlgebra R1: el HTML enlaza al foro del curso 78734 (enlace obsoleto) y prohíbe la IA.
 

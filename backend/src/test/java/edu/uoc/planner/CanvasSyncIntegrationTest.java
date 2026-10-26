@@ -12,7 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import edu.uoc.planner.auth.internal.SessionStore;
+import edu.uoc.planner.canvas.CanvasCatalog;
 import edu.uoc.planner.canvas.CanvasSync;
+import edu.uoc.planner.canvas.Deliverable;
 import edu.uoc.planner.canvas.SyncReport;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -53,6 +55,7 @@ class CanvasSyncIntegrationTest {
   }
 
   @Autowired private CanvasSync sync;
+  @Autowired private CanvasCatalog catalog;
   @Autowired private SessionStore sessions;
   @Autowired private JdbcTemplate jdbc;
 
@@ -137,6 +140,25 @@ class CanvasSyncIntegrationTest {
   }
 
   @Test
+  void updatesWhetherEachDeliverableIsSubmitted() {
+    sync.sync();
+    assertThat(submitted(979698)).isFalse();
+    json(
+        "/api/v1/courses/" + ALGEBRA + "/assignments",
+        Fixtures.json("canvas/algebra-assignments-submissions.json"));
+
+    SyncReport again = sync.sync();
+
+    assertThat(submitted(979698)).isTrue();
+    assertThat(submitted(979702)).isFalse();
+    assertThat(course(again, ALGEBRA).pagesChanged()).isZero();
+    assertThat(catalog.selectedChallenges().stream().flatMap(c -> c.deliverables().stream()))
+        .filteredOn(Deliverable::submitted)
+        .extracting(Deliverable::canvasAssignmentId)
+        .containsExactlyInAnyOrder(979674L, 979687L, 979698L);
+  }
+
+  @Test
   void storesTheStatementLinkedToItsChallenge() {
     sync.sync();
 
@@ -209,6 +231,13 @@ class CanvasSyncIntegrationTest {
         "SELECT body_hash FROM canvas_page WHERE course_id = ? AND page_url = 'enunciat-de-lactivitat-r1'",
         String.class,
         courseId);
+  }
+
+  private boolean submitted(long assignmentId) {
+    return jdbc.queryForObject(
+        "SELECT submitted FROM deliverable WHERE canvas_assignment_id = ?",
+        Boolean.class,
+        assignmentId);
   }
 
   private int deliverableCount(long courseId) {

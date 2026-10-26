@@ -11,6 +11,7 @@ import edu.uoc.planner.canvas.internal.api.CanvasAssignment;
 import edu.uoc.planner.canvas.internal.api.CanvasCourse;
 import edu.uoc.planner.canvas.internal.api.CanvasModule;
 import edu.uoc.planner.canvas.internal.api.CanvasModuleItem;
+import edu.uoc.planner.canvas.internal.api.CanvasSubmission;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -170,7 +171,19 @@ final class CanvasNormalizer {
         a.lockAt(),
         points(a),
         countsForGrade(a),
-        a.submissionTypes() == null ? List.of() : a.submissionTypes());
+        a.submissionTypes() == null ? List.of() : a.submissionTypes(),
+        submitted(a.submission()));
+  }
+
+  private static boolean submitted(CanvasSubmission s) {
+    if (s == null) {
+      return false;
+    }
+    return Boolean.TRUE.equals(s.excused())
+        || s.submittedAt() != null
+        || "submitted".equals(s.workflowState())
+        || "pending_review".equals(s.workflowState())
+        || "graded".equals(s.workflowState());
   }
 
   private static BigDecimal weight(BigDecimal points, BigDecimal coursePoints) {

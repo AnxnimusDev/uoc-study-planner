@@ -132,7 +132,7 @@ Paginación por cabecera `Link`. Resilience4j: 2 req/s, reintento con backoff en
 - `Challenge` ← módulo que empieza por "Repte" (fallback: módulo con entrega con `due_at`).
 - `Statement` ← página con `page_url` que empieza por `enunciat-de-lactivitat` (o que acaba en `-guidelines` en las aulas en inglés); si no, clasifica la IA.
 - `StudyGuide` ← página con `page_url` que empieza por `ges-`.
-- `Deliverable` ← cada `Assignment` del módulo (`unlock_at`, `due_at`, `lock_at`, `points_possible`, `submission_types`, `omit_from_final_grade`).
+- `Deliverable` ← cada `Assignment` del módulo (`unlock_at`, `due_at`, `lock_at`, `points_possible`, `submission_types`, `omit_from_final_grade` y, con `include[]=submission`, si el alumno ya lo ha entregado). Lo entregado no se planifica.
 - `Resource` ← enlaces clasificados en fichero Canvas, material UOC público o web externa.
 
 **Robustez**
@@ -216,7 +216,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 | `course` | `canvas_id` PK, `code`, `name`, `term_id`, `ics_url`, `selected`, `margin_days`, `start_at` (V5) |
 | `challenge` | `id`, `course_id`, `canvas_module_id`, `position`, `name`, `weight_pct`, `status` (SYNCED, EXTRACTED, NEEDS_REVIEW, AT_RISK, DONE) |
 | `canvas_page` | `course_id`, `page_url`, `title`, `role`, `body_html`, `body_hash`, `updated_at` |
-| `deliverable` | `canvas_assignment_id` PK, `challenge_id`, `name`, `unlock_at`, `due_at`, `lock_at`, `points`, `counts_for_grade`, `submission_types`, `rubric_json` |
+| `deliverable` | `canvas_assignment_id` PK, `challenge_id`, `name`, `unlock_at`, `due_at`, `lock_at`, `points`, `counts_for_grade`, `submission_types`, `submitted`, `rubric_json` |
 | `challenge_spec` | `challenge_id`, `version`, `spec_json` (nulo si falla), `errors` (V4), `model`, `source_hash`, `user_edited`, `created_at` |
 | `task` | `id`, `challenge_id` o `course_id` (V6), `spec_task_id`, `title`, `kind`, `estimated_hours`, `soft_deadline`, `hard_deadline`, `depends_on` |
 | `study_session` | `id`, `task_id`, `starts_at`, `ends_at`, `plan_version`, `state` (PLANNED, DONE, SKIPPED) |

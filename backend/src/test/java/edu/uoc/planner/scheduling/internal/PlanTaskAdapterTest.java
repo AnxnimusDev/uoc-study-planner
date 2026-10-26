@@ -153,6 +153,45 @@ class PlanTaskAdapterTest {
   }
 
   @Test
+  void dropsTheTasksOfASubmittedDeliverable() throws Exception {
+    StoredChallenge r1 = challenge(1, 3, "Repte 1", List.of(QUIZ_1, done(VIDEO_1)));
+
+    assertThat(adapt(List.of(r1), Map.of(1L, spec())).tasks())
+        .extracting(PlanTask::id)
+        .containsExactly("1:t1", "1:t2", "1:t3");
+  }
+
+  @Test
+  void dropsTheSharedTasksOnceEveryGradedDeliverableIsSubmitted() throws Exception {
+    StoredChallenge r1 = challenge(1, 3, "Repte 1", List.of(done(QUIZ_1), VIDEO_1));
+
+    // The study tasks have no deliverable; the recording does not count and is still pending.
+    assertThat(adapt(List.of(r1), Map.of(1L, spec())).tasks())
+        .extracting(PlanTask::id)
+        .containsExactly("1:t4");
+  }
+
+  @Test
+  void doesNotPlanASubmittedExternalQuiz() {
+    assertThat(adapt(List.of(r2(done(QUIZ_2))), Map.of()).tasks()).isEmpty();
+  }
+
+  @Test
+  void doesNotListASubmittedDeliverableAsUnestimated() {
+    Deliverable report =
+        deliverable(
+            968028,
+            "Lliurament de l'activitat R1",
+            null,
+            "2026-10-25T22:59:59Z",
+            25,
+            true,
+            "online_upload");
+
+    assertThat(adapt(List.of(r2(done(report))), Map.of()).unestimated()).isEmpty();
+  }
+
+  @Test
   void reservesTheWeeklyTimeOfACourseWithoutChallenges() {
     AvailabilityProfile profile =
         PROFILE.withWeeklyStudy(
@@ -265,6 +304,20 @@ class PlanTaskAdapterTest {
         null,
         BigDecimal.valueOf(points),
         counts,
-        List.of(types));
+        List.of(types),
+        false);
+  }
+
+  private static Deliverable done(Deliverable d) {
+    return new Deliverable(
+        d.canvasAssignmentId(),
+        d.name(),
+        d.unlockAt(),
+        d.dueAt(),
+        d.lockAt(),
+        d.points(),
+        d.countsForGrade(),
+        d.submissionTypes(),
+        true);
   }
 }

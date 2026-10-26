@@ -115,6 +115,24 @@ class CanvasClientTest {
   }
 
   @Test
+  void requestsAssignmentsWithTheStudentSubmission() {
+    stubJson(
+        "/api/v1/courses/94063/assignments",
+        Fixtures.json("canvas/algebra-assignments-submissions.json"));
+
+    List<CanvasAssignment> assignments = client.assignments(94063);
+
+    canvas.verify(
+        getRequestedFor(urlPathEqualTo("/api/v1/courses/94063/assignments"))
+            .withQueryParam("include[]", equalTo("submission"))
+            .withQueryParam("per_page", equalTo("100")));
+    assertThat(assignments)
+        .filteredOn(a -> a.id() == 979698L)
+        .singleElement()
+        .satisfies(a -> assertThat(a.submission().workflowState()).isEqualTo("graded"));
+  }
+
+  @Test
   void readsASinglePage() {
     stubJson(
         "/api/v1/courses/94063/pages/enunciat-de-lactivitat-r1",
