@@ -196,7 +196,7 @@ Asigna cada subtarea a franjas libres entre su apertura y su plazo efectivo, pri
 - Duras: sin solapes; respetar apertura, plazo efectivo, `dependsOn`, `minDaysAfterDependency`, carga máxima diaria y tamaño de sesión.
 - Blandas: acabar antes del plazo recomendado; franjas favoritas; máx. 2 asignaturas por día; hueco de revisión antes de cada entrega con nota; carga uniforme.
 
-**Voraz:** franjas de 6 semanas → ordenar por plazo efectivo, peso, orden → primera franja válida (partiendo sesiones largas) → tarea REVIEW de 30–60 min antes de cada entrega con nota → lo que no cabe marca el reto `AT_RISK`, nunca se recorta en silencio. Si algo queda en riesgo, se replanifica repartiendo cada semana entre las asignaturas con trabajo abierto, en proporción a sus minutos pendientes × (1 + peso / 100), y el tiempo sobrante se rellena por plazo (ADR 0008).
+**Voraz:** franjas de 6 semanas → ordenar por plazo efectivo, peso, orden → primera franja válida (partiendo sesiones largas) → tarea REVIEW de 30–60 min antes de cada entrega con nota → lo que no cabe marca el reto `AT_RISK`, nunca se recorta en silencio. Si algo queda en riesgo, se replanifica repartiendo cada semana entre las asignaturas con trabajo abierto, en proporción a los minutos que tocan esa semana para llegar a cada plazo × (1 + peso / 100); lo que vence esa semana puede pasar de su cuota si así llega entero, y el tiempo sobrante se rellena por plazo (ADR 0008 y 0009).
 
 **Casos especiales:** VIDEO_RECORDING sin hora (aviso en la ventana); QUIZ en una sola sesión, sin partir (ADR 0008); QUIZ externos 45 min por defecto; FORUM_REPLY al menos N días tras la publicación propia; al replanificar se mantienen tareas hechas y las de los próximos 2 días.
 
