@@ -611,12 +611,44 @@ class GreedyPlannerTest {
     void sharesTheWeekWhenNotEverythingFits() {
       Plan plan = plan(List.of(soon, later), evenings(14));
 
-      // In deadline order "soon" would take Monday to Wednesday alone.
-      assertThat(onDay(plan, MONDAY.plusDays(2)))
-          .extracting(PlannedSession::taskId)
-          .contains("later");
+      // "soon" cannot fit even alone, so it keeps its share and "later" also gets the first week.
+      // ADR 0009: "soon" is all due this week, "later" only half, so "soon" gets Monday to
+      // Wednesday.
+      assertThat(sessionsOf(plan, "later"))
+          .anySatisfy(s -> assertThat(s.start()).isBefore(at(MONDAY.plusDays(7), "00:00")));
       assertThat(sessionsOf(plan, "soon")).isNotEmpty();
       assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).containsExactly("soon");
+      assertNoOverlaps(plan);
+      assertDailyLimit(plan);
+    }
+
+    @Test
+    void givesTheWeekToWhatIsDueInItBeforeFarAwayWork() {
+      // ADR 0009: "far" counts only the part of its 30 h that falls in this week.
+      PlanTask urgent =
+          task("urgent")
+              .course("05.557")
+              .challenge(1)
+              .hours(3)
+              .due(MONDAY.plusDays(3))
+              .margin(0)
+              .build();
+      PlanTask far =
+          task("far").course("05.590").challenge(3).hours(30).due(MONDAY.plusDays(20)).build();
+      PlanTask impossible =
+          task("impossible")
+              .course("20.439")
+              .challenge(4)
+              .hours(10)
+              .due(MONDAY.plusDays(1))
+              .margin(0)
+              .build();
+
+      Plan plan = plan(List.of(urgent, far, impossible), evenings(28));
+
+      assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).containsExactly("impossible");
+      assertThat(total(plan, "urgent")).isEqualTo(Duration.ofHours(3));
+      assertThat(total(plan, "far")).isEqualTo(Duration.ofHours(30));
       assertNoOverlaps(plan);
       assertDailyLimit(plan);
     }

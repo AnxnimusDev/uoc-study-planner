@@ -2,6 +2,7 @@
 
 - Estado: aceptada
 - Fecha: 2026-10-25
+- Modificada por: ADR 0009 (cálculo del pendiente semanal)
 
 ## Contexto
 

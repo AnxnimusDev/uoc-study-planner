@@ -272,8 +272,9 @@ public final class GreedyPlanner implements Planner {
   /**
    * Phase A of ADR 0008: every week of the horizon is shared among the courses with work open in
    * it, in proportion to that work times (1 + challenge weight / 100), at least one minimum session
-   * each. Tasks go in the usual order and only take what is left of their course's share of each
-   * week. Returns the kept sessions plus the ones placed here.
+   * each. A task counts only the part due in the week at a steady pace (ADR 0009). Tasks go in the
+   * usual order and only take what is left of their course's share of each week. Returns the kept
+   * sessions plus the ones placed here.
    */
   private static List<PlannedSession> shareOut(
       PlanRequest request, Map<String, PlanTask> byId, List<PlanTask> order) {
@@ -308,15 +309,20 @@ public final class GreedyPlanner implements Planner {
           task.opensAt() != null && task.opensAt().isAfter(request.now())
               ? task.opensAt()
               : request.now();
-      Instant latest = latest(task, request, opens, horizonEnd);
+      Instant deadline = paceDeadline(task, request, opens, horizonEnd);
       for (LocalDate week : weeks) {
-        // Open in the week: opens before it ends and is due after it starts.
-        if (opens.isBefore(start(week.plusDays(7), request.zone()))
-            && latest.isAfter(start(week, request.zone()))) {
-          pending
-              .computeIfAbsent(task.courseCode(), c -> new HashMap<>())
-              .merge(week, minutes * (1 + task.challengeWeightPct() / 100), Double::sum);
+        Instant from = max(start(week, request.zone()), opens);
+        Instant to = min(start(week.plusDays(7), request.zone()), deadline);
+        if (!from.isBefore(to)) {
+          continue; // not open in this week
         }
+        // Share of what is left that falls in this week: the whole of it when due in the week.
+        double due =
+            (double) Duration.between(from, to).toSeconds()
+                / Duration.between(from, deadline).toSeconds();
+        pending
+            .computeIfAbsent(task.courseCode(), c -> new HashMap<>())
+            .merge(week, minutes * due * (1 + task.challengeWeightPct() / 100), Double::sum);
       }
     }
     Map<String, Map<LocalDate, Long>> quota = new HashMap<>();
@@ -392,6 +398,27 @@ public final class GreedyPlanner implements Planner {
           placed = attemptSessions;
           remaining = unplaced;
           break;
+        }
+      }
+      if (remaining > 0 && dueInItsWeek(task, request, earliest, horizonEnd)) {
+        // ADR 0009: beyond its quota only if that gets it done; if not, the others go on.
+        for (Tier tier : tiers) {
+          Capacity attempt = capacity.copy();
+          List<PlannedSession> extra = new ArrayList<>();
+          if (place(attempt, task, earliest, tier, remaining, limits, extra) == 0) {
+            capacity = attempt;
+            Map<LocalDate, Long> left =
+                quota.computeIfAbsent(task.courseCode(), c -> new HashMap<>());
+            for (PlannedSession session : extra) {
+              left.computeIfPresent(
+                  monday(session.start(), request.zone()),
+                  (week, minutes) -> Math.max(0, minutes - session.duration().toMinutes()));
+            }
+            placed = new ArrayList<>(placed);
+            placed.addAll(extra);
+            remaining = 0;
+            break;
+          }
         }
       }
       sessions.addAll(placed);
@@ -528,6 +555,27 @@ public final class GreedyPlanner implements Planner {
     return deadline == null || deadline.isAfter(horizonEnd) ? horizonEnd : deadline;
   }
 
+  /**
+   * Deadline to pace a task towards (ADR 0009): like {@link #latest} but not cut at the horizon, so
+   * far away work counts little in each week. Without a deadline, the end of the horizon.
+   */
+  private static Instant paceDeadline(
+      PlanTask task, PlanRequest request, Instant earliest, Instant horizonEnd) {
+    Instant deadline = effectiveDeadline(task, request);
+    if (marginSkipped(task, deadline, earliest)) {
+      deadline = task.dueAt();
+    }
+    return deadline == null ? horizonEnd : deadline;
+  }
+
+  /** The task's deadline falls in the same week it can start (ADR 0009). */
+  private static boolean dueInItsWeek(
+      PlanTask task, PlanRequest request, Instant earliest, Instant horizonEnd) {
+    Instant nextMonday = start(monday(earliest, request.zone()).plusDays(7), request.zone());
+    return task.dueAt() != null
+        && paceDeadline(task, request, earliest, horizonEnd).isBefore(nextMonday);
+  }
+
   /** Mondays of the weeks the horizon touches. */
   private static List<LocalDate> weeks(PlanRequest request, Instant horizonEnd) {
     List<LocalDate> weeks = new ArrayList<>();
@@ -548,6 +596,14 @@ public final class GreedyPlanner implements Planner {
 
   private static Instant start(LocalDate day, ZoneId zone) {
     return day.atStartOfDay(zone).toInstant();
+  }
+
+  private static Instant min(Instant a, Instant b) {
+    return a.isBefore(b) ? a : b;
+  }
+
+  private static Instant max(Instant a, Instant b) {
+    return a.isAfter(b) ? a : b;
   }
 
   /**
