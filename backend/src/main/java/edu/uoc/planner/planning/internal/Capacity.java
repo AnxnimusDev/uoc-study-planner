@@ -107,6 +107,43 @@ final class Capacity {
     return Optional.empty();
   }
 
+  /**
+   * Latest start for a session of exactly {@code minutes} that ends by {@code latest} (ADR 0010).
+   * Same limits as {@link #find}.
+   */
+  Optional<Instant> findLast(
+      Instant earliest,
+      Instant latest,
+      long minutes,
+      boolean preferredOnly,
+      boolean courseLimit,
+      String course,
+      ToLongFunction<DayOfWeek> maxDailyMinutes) {
+    Duration length = Duration.ofMinutes(minutes);
+    for (Window window : windows(preferredOnly).reversed()) {
+      Instant from = window.start().isBefore(earliest) ? earliest : window.start();
+      Instant end = min(window.end(), latest);
+      while (!end.minus(length).isBefore(from)) {
+        Instant start = end.minus(length);
+        LocalDate day = day(start);
+        Instant dayEnd = endOfDay(day);
+        if (end.isAfter(dayEnd)) {
+          end = dayEnd; // a session stays within one day
+          continue;
+        }
+        Set<String> today = courses.getOrDefault(day, Set.of());
+        boolean courseOk = !courseLimit || today.size() < 2 || today.contains(course);
+        long dayLeft =
+            maxDailyMinutes.applyAsLong(day.getDayOfWeek()) - studied.getOrDefault(day, 0L);
+        if (courseOk && dayLeft >= minutes) {
+          return Optional.of(start);
+        }
+        end = day.atStartOfDay(zone).toInstant(); // that day is full: try the one before
+      }
+    }
+    return Optional.empty();
+  }
+
   /** Free minutes left on a day, capped by what remains of its study limit. */
   long freeMinutes(LocalDate day, long maxDailyMinutes) {
     Instant from = day.atStartOfDay(zone).toInstant();
