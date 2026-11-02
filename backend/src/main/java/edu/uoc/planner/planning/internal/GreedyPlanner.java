@@ -42,6 +42,28 @@ public final class GreedyPlanner implements Planner {
 
   private record Tier(Instant latest, boolean preferredOnly, boolean courseLimit) {}
 
+  /**
+   * ADR 0010: sessions reserved for graded deliverables, and how late each task of their chains may
+   * end so that it comes before them.
+   */
+  private record Reservations(
+      List<PlannedSession> sessions, Map<String, Instant> until, List<Notice> notices) {
+
+    static final Reservations NONE = new Reservations(List.of(), Map.of(), List.of());
+
+    Set<String> taskIds() {
+      Set<String> ids = new HashSet<>();
+      sessions.forEach(s -> ids.add(s.taskId()));
+      return ids;
+    }
+
+    /** {@code latest}, or earlier if the task must end before a reservation. */
+    Instant cap(PlanTask task, Instant latest) {
+      Instant before = until.get(task.id());
+      return before != null && before.isBefore(latest) ? before : latest;
+    }
+  }
+
   @Override
   public Plan plan(PlanRequest request) {
     List<PlanTask> tasks = withReviews(request.tasks(), request.limits());
@@ -49,20 +71,25 @@ public final class GreedyPlanner implements Planner {
     tasks.forEach(t -> byId.put(t.id(), t));
     List<PlanTask> order = dependencyOrder(tasks, byId, request);
 
-    Plan plan = plan(request, byId, order, request.keptSessions());
+    Plan plan = plan(request, byId, order, request.keptSessions(), Reservations.NONE);
     if (plan.atRisk().isEmpty()) {
       return plan;
     }
-    // ADR 0008: not everything fits, so each course gets a share of every week first (phase A);
-    // those sessions are then kept while the rest is planned as usual (phase B).
-    return plan(request, byId, order, shareOut(request, byId, order));
+    // ADR 0010: graded deliverables left at risk get their time first. ADR 0008: then each course
+    // gets a share of every week (phase A); those sessions are kept while the rest is planned as
+    // usual (phase B).
+    Reservations reserved = reserveFinals(request, byId, order, plan);
+    List<PlannedSession> fixed = new ArrayList<>(request.keptSessions());
+    fixed.addAll(reserved.sessions());
+    return plan(request, byId, order, shareOut(request, byId, order, fixed, reserved), reserved);
   }
 
   private Plan plan(
       PlanRequest request,
       Map<String, PlanTask> byId,
       List<PlanTask> order,
-      List<PlannedSession> keptSessions) {
+      List<PlannedSession> keptSessions,
+      Reservations reserved) {
     Instant horizonEnd = horizonEnd(request);
     Capacity capacity = Capacity.of(request.slots(), request.now(), horizonEnd, request.zone());
     List<PlannedSession> sessions = new ArrayList<>();
@@ -79,8 +106,9 @@ public final class GreedyPlanner implements Planner {
     Set<String> blocked = new HashSet<>();
     Set<String> deferred = new HashSet<>();
     List<AtRiskTask> atRisk = new ArrayList<>();
-    List<Notice> notices = new ArrayList<>();
+    List<Notice> notices = new ArrayList<>(reserved.notices());
     List<String> deferredOrder = new ArrayList<>();
+    Set<String> reservedIds = reserved.taskIds();
 
     for (PlanTask task : order) {
       if (task.kind() == TaskKind.VIDEO_RECORDING) {
@@ -93,6 +121,10 @@ public final class GreedyPlanner implements Planner {
                 "Graba el vídeo dentro de la ventana: el profesorado lo convoca y hay poco tiempo"
                     + " para subirlo."));
         satisfied.add(task.id());
+        continue;
+      }
+      if (reservedIds.contains(task.id()) && keptEnd.containsKey(task.id())) {
+        finished.put(task.id(), keptEnd.get(task.id())); // ADR 0010: not blocked by its chain
         continue;
       }
       Optional<String> blocker = task.dependsOn().stream().filter(blocked::contains).findFirst();
@@ -136,6 +168,10 @@ public final class GreedyPlanner implements Planner {
       }
       boolean beyondHorizon = deadline == null || deadline.isAfter(horizonEnd);
       Instant latest = beyondHorizon ? horizonEnd : deadline;
+      if (reserved.cap(task, latest).isBefore(latest)) {
+        latest = reserved.cap(task, latest);
+        beyondHorizon = false;
+      }
 
       long remaining = remaining(task, keptTime).toMinutes();
       List<PlannedSession> placed = new ArrayList<>();
@@ -277,12 +313,15 @@ public final class GreedyPlanner implements Planner {
    * sessions plus the ones placed here.
    */
   private static List<PlannedSession> shareOut(
-      PlanRequest request, Map<String, PlanTask> byId, List<PlanTask> order) {
+      PlanRequest request,
+      Map<String, PlanTask> byId,
+      List<PlanTask> order,
+      List<PlannedSession> fixed,
+      Reservations reserved) {
     PlanLimits limits = request.limits();
     Instant horizonEnd = horizonEnd(request);
     Capacity capacity = Capacity.of(request.slots(), request.now(), horizonEnd, request.zone());
-    List<PlannedSession> sessions =
-        new ArrayList<>(keep(capacity, request.keptSessions(), byId, limits));
+    List<PlannedSession> sessions = new ArrayList<>(keep(capacity, fixed, byId, limits));
     Map<String, Duration> keptTime = new HashMap<>();
     Map<String, Instant> keptEnd = new HashMap<>();
     for (PlannedSession kept : sessions) {
@@ -309,7 +348,7 @@ public final class GreedyPlanner implements Planner {
           task.opensAt() != null && task.opensAt().isAfter(request.now())
               ? task.opensAt()
               : request.now();
-      Instant deadline = paceDeadline(task, request, opens, horizonEnd);
+      Instant deadline = reserved.cap(task, paceDeadline(task, request, opens, horizonEnd));
       for (LocalDate week : weeks) {
         Instant from = max(start(week, request.zone()), opens);
         Instant to = min(start(week.plusDays(7), request.zone()), deadline);
@@ -342,6 +381,14 @@ public final class GreedyPlanner implements Planner {
         }
       }
     }
+    // ADR 0010: a reserved deliverable is work of its course in its week.
+    for (PlannedSession session : reserved.sessions()) {
+      quota
+          .getOrDefault(session.courseCode(), new HashMap<>())
+          .computeIfPresent(
+              monday(session.start(), request.zone()),
+              (week, minutes) -> Math.max(0, minutes - session.duration().toMinutes()));
+    }
 
     for (PlanTask task : order) {
       long remaining = remaining(task, keptTime).toMinutes();
@@ -360,7 +407,7 @@ public final class GreedyPlanner implements Planner {
       if (!earliest.isBefore(horizonEnd)) {
         continue;
       }
-      Instant latest = latest(task, request, earliest, horizonEnd);
+      Instant latest = reserved.cap(task, latest(task, request, earliest, horizonEnd));
       Map<LocalDate, Long> share = quota.getOrDefault(task.courseCode(), Map.of());
       // The most the hard limits allow, then the most preferred tier that still places that much.
       List<Tier> tiers = tiers(task, latest);
@@ -429,6 +476,145 @@ public final class GreedyPlanner implements Planner {
       }
     }
     return sessions;
+  }
+
+  /**
+   * ADR 0010: graded quizzes and submissions left at risk by the plain pass get their time first,
+   * as late as their window allows, so the earlier time is left for the work before them. They do
+   * not wait for that work, only for deliverables of their chain reserved before them. If nothing
+   * fits before the effective deadline, they may use the margin, with a notice.
+   */
+  private static Reservations reserveFinals(
+      PlanRequest request, Map<String, PlanTask> byId, List<PlanTask> order, Plan plain) {
+    PlanLimits limits = request.limits();
+    Instant horizonEnd = horizonEnd(request);
+    Capacity capacity = Capacity.of(request.slots(), request.now(), horizonEnd, request.zone());
+    Map<String, Duration> keptTime = new HashMap<>();
+    for (PlannedSession kept : keep(capacity, request.keptSessions(), byId, limits)) {
+      keptTime.merge(kept.taskId(), kept.duration(), Duration::plus);
+    }
+    Set<String> risky = new HashSet<>();
+    plain.atRisk().forEach(r -> risky.add(r.taskId()));
+
+    List<PlannedSession> sessions = new ArrayList<>();
+    Map<String, Instant> until = new HashMap<>();
+    Map<String, Instant> reservedEnd = new HashMap<>();
+    List<Notice> notices = new ArrayList<>();
+    for (PlanTask task : order) {
+      if (!isFinal(task)
+          || !risky.contains(task.id())
+          || task.dueAt() == null
+          || !task.dueAt().isAfter(request.now())
+          || task.dueAt().isAfter(horizonEnd)) {
+        continue;
+      }
+      long minutes = remaining(task, keptTime).toMinutes();
+      Set<String> chain = chain(task, byId);
+      Instant earliest =
+          task.opensAt() != null && task.opensAt().isAfter(request.now())
+              ? task.opensAt()
+              : request.now();
+      boolean waits = false;
+      for (String id : chain) {
+        if (reservedEnd.containsKey(id)) {
+          earliest = max(earliest, reservedEnd.get(id));
+        } else if (isFinal(byId.get(id)) && risky.contains(id)) {
+          waits = true; // e.g. sending a PAC whose quiz has no time either
+        }
+      }
+      if (minutes == 0 || waits) {
+        continue;
+      }
+      Instant deadline = effectiveDeadline(task, request);
+      Capacity attempt = capacity.copy();
+      List<PlannedSession> placed = placeLast(attempt, task, earliest, deadline, minutes, limits);
+      if (placed.isEmpty() && deadline.isBefore(task.dueAt())) {
+        attempt = capacity.copy();
+        placed = placeLast(attempt, task, earliest, task.dueAt(), minutes, limits);
+        if (!placed.isEmpty()) {
+          notices.add(
+              new Notice(
+                  task.id(),
+                  Notice.Type.MARGIN_SKIPPED,
+                  placed.getFirst().start(),
+                  task.dueAt(),
+                  "No queda margen antes del plazo: se planifica hasta la hora de entrega."));
+        }
+      }
+      if (placed.isEmpty()) {
+        continue; // stays at risk
+      }
+      capacity = attempt;
+      sessions.addAll(placed);
+      reservedEnd.put(task.id(), placed.getLast().end());
+      Instant before = placed.getFirst().start().minus(Capacity.BREAK);
+      for (String id : chain) {
+        if (!reservedEnd.containsKey(id)) {
+          until.merge(id, before, GreedyPlanner::min);
+        }
+      }
+    }
+    return new Reservations(sessions, until, notices);
+  }
+
+  /**
+   * As late as possible before {@code latest}: a quiz whole, anything else in sessions from the end
+   * backwards. Empty if not all of it fits.
+   */
+  private static List<PlannedSession> placeLast(
+      Capacity capacity,
+      PlanTask task,
+      Instant earliest,
+      Instant latest,
+      long remaining,
+      PlanLimits limits) {
+    List<PlannedSession> placed = new ArrayList<>();
+    Instant end = latest;
+    while (remaining > 0) {
+      long minutes = task.kind() == TaskKind.QUIZ ? remaining : desiredSession(remaining, limits);
+      Optional<Instant> start = Optional.empty();
+      // The tiers without the recommended date: the reservation goes late on purpose.
+      for (Tier tier :
+          List.of(
+              new Tier(end, true, true), new Tier(end, false, true), new Tier(end, false, false))) {
+        start =
+            capacity.findLast(
+                earliest,
+                end,
+                minutes,
+                tier.preferredOnly(),
+                tier.courseLimit(),
+                task.courseCode(),
+                limits::maxDailyMinutes);
+        if (start.isPresent()) {
+          break;
+        }
+      }
+      if (start.isEmpty()) {
+        return List.of();
+      }
+      placed.addFirst(reserve(capacity, task, new Capacity.Spot(start.get(), minutes)));
+      end = start.get().minus(Capacity.BREAK);
+      remaining -= minutes;
+    }
+    return placed;
+  }
+
+  private static boolean isFinal(PlanTask task) {
+    return task.graded() && FINAL_KINDS.contains(task.kind());
+  }
+
+  /** Everything the task depends on, directly or not. */
+  private static Set<String> chain(PlanTask task, Map<String, PlanTask> byId) {
+    Set<String> chain = new HashSet<>();
+    List<String> next = new ArrayList<>(task.dependsOn());
+    while (!next.isEmpty()) {
+      String id = next.removeLast();
+      if (byId.containsKey(id) && !id.equals(task.id()) && chain.add(id)) {
+        next.addAll(byId.get(id).dependsOn());
+      }
+    }
+    return chain;
   }
 
   /**

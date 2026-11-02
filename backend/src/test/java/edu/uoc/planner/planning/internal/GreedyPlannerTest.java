@@ -677,6 +677,123 @@ class GreedyPlannerTest {
     }
   }
 
+  /** ADR 0010: like a PAC whose study does not fit before its quiz. */
+  @Nested
+  class ReservedDeliverables {
+
+    private final PlanTask study =
+        task("study")
+            .kind(TaskKind.READING)
+            .hours(6)
+            .due(MONDAY.plusDays(2))
+            .deliverable("assignment:7", true)
+            .build();
+    private final PlanTask practice =
+        task("practice")
+            .hours(4)
+            .due(MONDAY.plusDays(2))
+            .deliverable("assignment:7", true)
+            .dependsOn("study")
+            .build();
+
+    private PlanTask quiz(int hours) {
+      return task("quiz")
+          .kind(TaskKind.QUIZ)
+          .hours(hours)
+          .due(MONDAY.plusDays(2))
+          .deliverable("assignment:7", true)
+          .dependsOn("practice")
+          .build();
+    }
+
+    @Test
+    void reservesTheGradedQuizWhenItsChainDoesNotFit() {
+      Plan plan = plan(List.of(study, practice, quiz(2)), evenings(14));
+
+      // Effective deadline: Tuesday night. The quiz goes as late as it can, in one session.
+      assertThat(sessionsOf(plan, "quiz"))
+          .singleElement()
+          .satisfies(
+              q -> {
+                assertThat(q.start()).isEqualTo(at(MONDAY.plusDays(1), "19:00"));
+                assertThat(q.duration()).isEqualTo(Duration.ofHours(2));
+              });
+      assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).doesNotContain("quiz");
+      assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).contains("study", "practice");
+      assertThat(plan.notices())
+          .extracting(Notice::type)
+          .doesNotContain(Notice.Type.MARGIN_SKIPPED);
+      assertNoOverlaps(plan);
+      assertDailyLimit(plan);
+    }
+
+    @Test
+    void prerequisitesGoBeforeTheReservedQuiz() {
+      Plan plan = plan(List.of(study, practice, quiz(2)), evenings(14));
+
+      Instant quizStart = first(plan, "quiz");
+      // Monday 165 min (two sessions and a break), Tuesday 45 min before the quiz and its break.
+      assertThat(total(plan, "study")).isEqualTo(Duration.ofMinutes(210));
+      assertThat(sessionsOf(plan, "study"))
+          .allSatisfy(s -> assertThat(s.end()).isBeforeOrEqualTo(quizStart.minus(Capacity.BREAK)));
+      // Dependencies between the prerequisites stay hard.
+      assertThat(sessionsOf(plan, "practice")).isEmpty();
+    }
+
+    @Test
+    void usesTheMarginForAReservedQuizOnlyWhenNothingElseFits() {
+      PlanLimits limits =
+          new PlanLimits(30, 120, 3.0, Map.of(DayOfWeek.MONDAY, 1.5, DayOfWeek.TUESDAY, 1.5));
+
+      Plan plan =
+          planner.plan(
+              new PlanRequest(
+                  NOW,
+                  MADRID,
+                  List.of(study, practice, quiz(3)),
+                  evenings(14),
+                  limits,
+                  6,
+                  List.of()));
+
+      // Three hours in a row do not fit on Monday or Tuesday: Wednesday, the day it is due.
+      assertThat(sessionsOf(plan, "quiz"))
+          .singleElement()
+          .satisfies(
+              q -> {
+                assertThat(q.start()).isEqualTo(at(MONDAY.plusDays(2), "18:00"));
+                assertThat(q.end()).isEqualTo(at(MONDAY.plusDays(2), "21:00"));
+              });
+      assertThat(plan.notices())
+          .anySatisfy(
+              n -> {
+                assertThat(n.taskId()).isEqualTo("quiz");
+                assertThat(n.type()).isEqualTo(Notice.Type.MARGIN_SKIPPED);
+              });
+      assertThat(total(plan, "study")).isEqualTo(Duration.ofHours(3));
+      assertNoOverlaps(plan);
+    }
+
+    @Test
+    void doesNotReserveASubmissionBeforeTheQuizItDependsOn() {
+      PlanTask send =
+          task("send")
+              .kind(TaskKind.SUBMISSION)
+              .minutes(30)
+              .due(MONDAY.plusDays(2))
+              .deliverable("assignment:7", true)
+              .dependsOn("quiz")
+              .build();
+
+      Plan plan = plan(List.of(study, practice, quiz(2), send), evenings(14));
+
+      assertThat(sessionsOf(plan, "send"))
+          .singleElement()
+          .satisfies(s -> assertThat(s.start()).isAfterOrEqualTo(last(plan, "quiz")));
+      assertNoOverlaps(plan);
+    }
+  }
+
   @Nested
   class WithRealAvailability {
 
