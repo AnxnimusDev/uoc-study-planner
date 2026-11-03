@@ -66,7 +66,11 @@ public final class GreedyPlanner implements Planner {
 
   @Override
   public Plan plan(PlanRequest request) {
-    List<PlanTask> tasks = withReviews(request.tasks(), request.limits());
+    List<PlanTask> tasks =
+        withReviews(
+            withProgress(request.tasks(), request.progress()),
+            request.limits(),
+            request.progress());
     Map<String, PlanTask> byId = new LinkedHashMap<>();
     tasks.forEach(t -> byId.put(t.id(), t));
     List<PlanTask> order = dependencyOrder(tasks, byId, request);
@@ -856,7 +860,15 @@ public final class GreedyPlanner implements Planner {
       PlanTask task,
       Duration missing,
       String reason) {
-    atRisk.add(new AtRiskTask(task.id(), task.challengeId(), missing, reason));
+    atRisk.add(
+        new AtRiskTask(
+            task.id(),
+            task.challengeId(),
+            task.courseCode(),
+            task.title(),
+            task.dueAt(),
+            missing,
+            reason));
     blocked.add(task.id());
   }
 
@@ -916,10 +928,28 @@ public final class GreedyPlanner implements Planner {
   }
 
   /**
+   * ADR 0011: tasks the student reported done are left out, as if submitted; the others keep only
+   * the time left.
+   */
+  private static List<PlanTask> withProgress(List<PlanTask> tasks, Map<String, Duration> progress) {
+    List<PlanTask> result = new ArrayList<>();
+    for (PlanTask task : tasks) {
+      Duration left = progress.get(task.id());
+      if (left == null) {
+        result.add(task);
+      } else if (!left.isZero()) {
+        result.add(task.withEstimate(left));
+      }
+    }
+    return result;
+  }
+
+  /**
    * Adds a review before each graded deliverable (design: "hueco de revisión antes de cada entrega
    * con nota"): after the work on it, before the quiz or submission.
    */
-  private static List<PlanTask> withReviews(List<PlanTask> tasks, PlanLimits limits) {
+  private static List<PlanTask> withReviews(
+      List<PlanTask> tasks, PlanLimits limits, Map<String, Duration> progress) {
     Map<String, List<PlanTask>> byDeliverable = new LinkedHashMap<>();
     for (PlanTask task : tasks) {
       if (task.graded()
@@ -941,11 +971,17 @@ public final class GreedyPlanner implements Planner {
       List<String> before =
           group.stream().filter(t -> !FINAL_KINDS.contains(t.kind())).map(PlanTask::id).toList();
       PlanTask first = group.getFirst();
-      long minutes =
-          Math.max(
-              first.challengeWeightPct() >= LONG_REVIEW_WEIGHT_PCT ? 60 : 30,
-              limits.minSessionMinutes());
       String id = "review:" + first.challengeId() + ":" + first.deliverableRef();
+      Duration left = progress.get(id);
+      if (left != null && left.isZero()) {
+        continue; // ADR 0011: the student has done it
+      }
+      long minutes =
+          left != null
+              ? left.toMinutes()
+              : Math.max(
+                  first.challengeWeightPct() >= LONG_REVIEW_WEIGHT_PCT ? 60 : 30,
+                  limits.minSessionMinutes());
       PlanTask anchor = finals.isEmpty() ? first : finals.getFirst();
       Instant recommended =
           finals.stream()

@@ -44,6 +44,26 @@ public record PlanTask(
     dependsOn = List.copyOf(dependsOn);
   }
 
+  public PlanTask withEstimate(Duration value) {
+    return new PlanTask(
+        id,
+        challengeId,
+        courseCode,
+        challengeWeightPct,
+        order,
+        title,
+        kind,
+        value,
+        opensAt,
+        dueAt,
+        marginDays,
+        recommendedBy,
+        dependsOn,
+        minDaysAfterDependency,
+        deliverableRef,
+        graded);
+  }
+
   public PlanTask withDependency(String taskId) {
     List<String> deps = new java.util.ArrayList<>(dependsOn);
     deps.add(taskId);

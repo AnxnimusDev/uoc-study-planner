@@ -242,6 +242,10 @@ class GreedyPlannerTest {
       assertThat(plan.atRisk()).extracting(AtRiskTask::taskId).contains("huge", "next");
       assertThat(sessionsOf(plan, "next")).isEmpty();
       assertThat(risk(plan, "next").reason()).contains("huge");
+      // ADR 0011: enough to show it to the student.
+      assertThat(risk(plan, "next").title()).isEqualTo("Tasca next");
+      assertThat(risk(plan, "next").courseCode()).isEqualTo("05.557");
+      assertThat(risk(plan, "next").dueAt()).isEqualTo(endOf(MONDAY.plusDays(3)));
     }
   }
 
@@ -677,6 +681,56 @@ class GreedyPlannerTest {
     }
   }
 
+  /** ADR 0011: what the student reports done or half done. */
+  @Nested
+  class Progress {
+
+    @Test
+    void leavesOutADoneTaskAndLetsItsDependentsStart() {
+      PlanTask read = task("read").hours(2).build();
+      PlanTask practise = task("practise").hours(1).dependsOn("read").build();
+
+      Plan plan = plan(List.of(read, practise), evenings(14), Map.of("read", Duration.ZERO));
+
+      assertThat(sessionsOf(plan, "read")).isEmpty();
+      assertThat(first(plan, "practise")).isEqualTo(at(MONDAY, "18:00"));
+      assertThat(plan.atRisk()).isEmpty();
+    }
+
+    @Test
+    void plansOnlyWhatIsLeftOfATask() {
+      PlanTask read = task("read").hours(3).build();
+
+      Plan plan = plan(List.of(read), evenings(14), Map.of("read", Duration.ofMinutes(45)));
+
+      assertThat(total(plan, "read")).isEqualTo(Duration.ofMinutes(45));
+    }
+
+    @Test
+    void appliesTheProgressOfAReviewTheTasksDoNotHave() {
+      PlanTask work = task("work").hours(2).deliverable("assignment:1", true).build();
+      PlanTask submit =
+          task("submit")
+              .kind(TaskKind.SUBMISSION)
+              .minutes(30)
+              .deliverable("assignment:1", true)
+              .dependsOn("work")
+              .build();
+
+      Plan done =
+          plan(List.of(work, submit), evenings(14), Map.of("review:1:assignment:1", Duration.ZERO));
+      Plan half =
+          plan(
+              List.of(work, submit),
+              evenings(14),
+              Map.of("review:1:assignment:1", Duration.ofMinutes(30)));
+
+      assertThat(ofKind(done, TaskKind.REVIEW)).isEmpty();
+      assertThat(sessionsOf(done, "submit")).isNotEmpty();
+      assertThat(total(half, "review:1:assignment:1")).isEqualTo(Duration.ofMinutes(30));
+    }
+  }
+
   /** ADR 0010: like a PAC whose study does not fit before its quiz. */
   @Nested
   class ReservedDeliverables {
@@ -839,6 +893,10 @@ class GreedyPlannerTest {
 
   private Plan plan(List<PlanTask> tasks, List<FreeSlot> slots) {
     return planner.plan(new PlanRequest(NOW, MADRID, tasks, slots, LIMITS, 6, List.of()));
+  }
+
+  private Plan plan(List<PlanTask> tasks, List<FreeSlot> slots, Map<String, Duration> progress) {
+    return planner.plan(new PlanRequest(NOW, MADRID, tasks, slots, LIMITS, 6, List.of(), progress));
   }
 
   private static List<FreeSlot> evenings(int days) {
