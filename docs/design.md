@@ -182,6 +182,8 @@ Horas libres = semana tipo − bloques ocupados (trabajo, desplazamientos, hobbi
 
 Sin respuesta en 24 h se usa la semana tipo y el plan queda "sin confirmar". Modelo: `WeeklyTemplate` (TimeBlocks), `Override` (BUSY / FREE / OFFICE_DAY), `FreeSlot`. Las horas reales ajustan un factor de rendimiento por asignatura.
 
+**Avance de tareas (ADR 0011):** `make done TASK=<id>` da una tarea por hecha y `make left TASK=<id> HOURS=<h>` indica lo que le queda; el id sale en `make plan`. Se guarda en `task_progress` y el plan usa lo que queda en vez de la estimación. Si se vuelve a extraer el enunciado de un reto, su avance se descarta con aviso.
+
 ## 8. Motor de planificación
 
 Asigna cada subtarea a franjas libres entre su apertura y su plazo efectivo, priorizando lo que vence antes y pesa más. MVP voraz; fase 2 con Timefold Solver detrás de la interfaz `Planner`.
@@ -198,7 +200,7 @@ Asigna cada subtarea a franjas libres entre su apertura y su plazo efectivo, pri
 
 **Voraz:** franjas de 6 semanas → ordenar por plazo efectivo, peso, orden → primera franja válida (partiendo sesiones largas) → tarea REVIEW de 30–60 min antes de cada entrega con nota → lo que no cabe marca el reto `AT_RISK`, nunca se recorta en silencio. Si algo queda en riesgo, se replanifica repartiendo cada semana entre las asignaturas con trabajo abierto, en proporción a los minutos que tocan esa semana para llegar a cada plazo × (1 + peso / 100); lo que vence esa semana puede pasar de su cuota si así llega entero, y el tiempo sobrante se rellena por plazo (ADR 0008 y 0009). Antes del reparto, cada entrega con nota (QUIZ o SUBMISSION) que haya quedado en riesgo se reserva lo más tarde posible dentro de su ventana, sin esperar a su trabajo previo, que va antes de ella; solo esa reserva puede usar el margen, con aviso (ADR 0010).
 
-**Casos especiales:** VIDEO_RECORDING sin hora (aviso en la ventana); QUIZ en una sola sesión, sin partir (ADR 0008); QUIZ externos 45 min por defecto; FORUM_REPLY al menos N días tras la publicación propia; al replanificar se mantienen tareas hechas y las de los próximos 2 días.
+**Casos especiales:** VIDEO_RECORDING sin hora (aviso en la ventana); QUIZ en una sola sesión, sin partir (ADR 0008); QUIZ externos 45 min por defecto; FORUM_REPLY al menos N días tras la publicación propia; al replanificar se mantienen tareas hechas y las de los próximos 2 días; una tarea con avance registrado se planifica con lo que le queda (ADR 0011).
 
 ## 9. Salidas
 
@@ -225,6 +227,7 @@ PostgreSQL 16 + Flyway. Fechas en `timestamptz`; `jsonb` solo para spec, rúbric
 | `availability_block` | `id`, `day_of_week`, `start_time`, `end_time`, `type`, `label` |
 | `availability_override` | `id`, `date`, `start_time`, `end_time`, `effect` (BUSY, FREE, OFFICE_DAY) |
 | `checkin` | `id`, `kind` (WEEKLY, MONTHLY), `period_start`, `answers_json`, `answered_at` |
+| `task_progress` (V8) | `task_id` PK, `challenge_id`, `spec_version`, `remaining_minutes`, `reported_at` |
 | `external_ref` | `entity_type`, `entity_id`, `system`, `external_id` |
 | `user_settings` | clave/valor cifrado |
 | `session_secret` | `id`, `cookie_blob` (cifrado), `captured_at`, `last_valid_at`, `expired_at` (V2) |

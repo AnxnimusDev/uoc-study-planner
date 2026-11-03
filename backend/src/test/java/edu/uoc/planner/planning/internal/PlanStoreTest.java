@@ -167,7 +167,14 @@ class PlanStoreTest {
     return new Plan(
         List.of(sessions),
         List.of(
-            new AtRiskTask("1:t2", challengeId, Duration.ofMinutes(90), "No cabe antes del plazo")),
+            new AtRiskTask(
+                "1:t2",
+                challengeId,
+                "05.557",
+                "Llegir",
+                null,
+                Duration.ofMinutes(90),
+                "No cabe antes del plazo")),
         List.of(
             new Notice(
                 "1:t2",

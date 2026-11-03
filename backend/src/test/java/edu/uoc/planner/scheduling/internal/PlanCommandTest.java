@@ -9,6 +9,7 @@ import edu.uoc.planner.canvas.CanvasSessionExpiredException;
 import edu.uoc.planner.canvas.SyncReport;
 import edu.uoc.planner.extraction.ChallengeSpec.TaskKind;
 import edu.uoc.planner.planning.AtRiskTask;
+import edu.uoc.planner.planning.Notice;
 import edu.uoc.planner.planning.Plan;
 import edu.uoc.planner.planning.PlannedSession;
 import edu.uoc.planner.scheduling.ExtractionReport;
@@ -48,13 +49,23 @@ class PlanCommandTest {
         new Plan(
             List.of(monday),
             List.of(
-                new AtRiskTask("2:t1", 2, Duration.ofMinutes(90), "No cabe antes del plazo"),
+                new AtRiskTask(
+                    "2:t1",
+                    2,
+                    "05.590",
+                    "Elaborar els diagrames",
+                    Instant.parse("2026-11-15T22:59:00Z"),
+                    Duration.ofMinutes(90),
+                    "No cabe antes del plazo"),
                 new AtRiskTask(
                     "weekly:20.043:2026-W44",
                     0,
+                    "20.043",
+                    "Laboratori",
+                    Instant.parse("2026-11-01T22:59:59Z"),
                     Duration.ofMinutes(60),
                     "No cabe antes del plazo")),
-            List.of(),
+            List.of(video("1:t4"), video("1:t9")),
             List.of(),
             List.of(2L),
             Duration.ofMinutes(90));
@@ -74,7 +85,8 @@ class PlanCommandTest {
                     plan,
                     List.of("05.590 · Lliurament R1"),
                     List.of("20.999"),
-                    ZoneId.of("Europe/Madrid"))));
+                    ZoneId.of("Europe/Madrid"),
+                    List.of("05.562 · Repte 2"))));
 
     PlanCommand command = command();
     command.run(null);
@@ -83,13 +95,25 @@ class PlanCommandTest {
     assertThat(output())
         .contains("0 extraídos, 0 para revisar, 1 sin enunciado, 1 pendientes")
         .contains("Extracción detenida: Claude API answered 400: Your credit balance is too low")
-        .contains("Lunes 26/10", "18:15–19:00 · 05.557 · Llegir la GES")
-        .contains("En riesgo", "2:t1: faltan 90 min")
+        .contains("Lunes 26/10", "18:15–19:00 · 05.557 · Llegir la GES [1:t1]")
+        .contains(
+            "En riesgo",
+            "· [2:t1] Elaborar els diagrames (05.590, vence 15/11): faltan 90 min"
+                + " (No cabe antes del plazo)")
         .doesNotContain("weekly:20.043:2026-W44: faltan")
         .contains("Sin estimar", "05.590 · Lliurament R1")
         .contains("Tiempo semanal sin hueco", "20.043, semana 2026-W44: faltan 60 min")
         .contains("weeklyStudy: 20.999 no es una asignatura seleccionada")
+        .contains("Graba el vídeo dentro de la ventana. (2 tareas)")
+        .contains("Se ha vuelto a extraer el enunciado de 05.562 · Repte 2")
+        .contains("make done TASK=", "make left TASK=")
         .contains("make feed");
+    assertThat(output().split("Graba el vídeo", -1)).hasSize(2);
+  }
+
+  private static Notice video(String taskId) {
+    return new Notice(
+        taskId, Notice.Type.VIDEO_WINDOW, NOW, NOW, "Graba el vídeo dentro de la ventana.");
   }
 
   @Test

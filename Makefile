@@ -7,10 +7,10 @@ export
 RAW_DIR := backend/src/test/resources/fixtures/raw
 FIXTURE_DIR := backend/src/test/resources/fixtures/canvas
 
-.PHONY: help up down test run login sync extract plan feed fixtures format
+.PHONY: help up down test run login sync extract plan done left feed fixtures format
 
 help: ## Muestra esta ayuda
-	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
 
 up: ## Arranca PostgreSQL en Docker
 	docker compose up -d --wait
@@ -35,6 +35,12 @@ extract: up ## Extrae con Claude los enunciados nuevos o modificados
 
 plan: up ## Sincroniza, extrae y planifica; muestra los próximos 7 días
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=plan
+
+done: up ## Marca una tarea como hecha: make done TASK=7:t1
+	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments="--planner.command=progress --planner.task=$(TASK)"
+
+left: up ## Indica lo que le queda a una tarea: make left TASK=7:t3 HOURS=1.5
+	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments="--planner.command=progress --planner.task=$(TASK) --planner.hours=$(HOURS)"
 
 feed: up ## Muestra las URL de los calendarios para suscribirte
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=feed-url

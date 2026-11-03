@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +36,7 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
   private static final Locale SPANISH = Locale.forLanguageTag("es-ES");
   private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEEE d/M", SPANISH);
   private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+  private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d/M");
 
   private final StudyPipeline pipeline;
   private final Clock clock;
@@ -124,7 +126,10 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
                           + " · "
                           + s.courseCode()
                           + " · "
-                          + s.title()));
+                          + s.title()
+                          + " ["
+                          + s.taskId()
+                          + "]"));
         });
     List<AtRiskTask> risks =
         report.plan().plan().atRisk().stream().filter(r -> !weekly(r)).toList();
@@ -134,9 +139,14 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
       risks.forEach(
           r ->
               out.println(
-                  "  · "
+                  "  · ["
                       + r.taskId()
-                      + ": faltan "
+                      + "] "
+                      + r.title()
+                      + " ("
+                      + r.courseCode()
+                      + (r.dueAt() == null ? "" : ", vence " + DATE.format(r.dueAt().atZone(zone)))
+                      + "): faltan "
                       + r.missing().toMinutes()
                       + " min ("
                       + r.reason()
@@ -170,13 +180,31 @@ final class PlanCommand implements ApplicationRunner, ExitCodeGenerator {
       out.println("Sin estimar (no planificado, revisa el enunciado):");
       report.plan().unestimated().forEach(u -> out.println("  · " + u));
     }
-    List<Notice> notices = report.plan().plan().notices();
-    if (!notices.isEmpty()) {
+    // The same notice for several tasks (e.g. every identity video) is shown once.
+    Map<String, Long> notices =
+        report.plan().plan().notices().stream()
+            .collect(
+                Collectors.groupingBy(Notice::message, LinkedHashMap::new, Collectors.counting()));
+    if (!notices.isEmpty() || !report.plan().progressReset().isEmpty()) {
       out.println();
       out.println("Avisos:");
-      notices.forEach(n -> out.println("  · " + n.message()));
+      notices.forEach(
+          (message, count) ->
+              out.println("  · " + message + (count > 1 ? " (" + count + " tareas)" : "")));
+      report
+          .plan()
+          .progressReset()
+          .forEach(
+              c ->
+                  out.println(
+                      "  · Se ha vuelto a extraer el enunciado de "
+                          + c
+                          + ": revisa el avance de sus tareas."));
     }
     out.println();
+    out.println(
+        "Avance: make done TASK=<id> si la has terminado, make left TASK=<id> HOURS=<h> si te"
+            + " queda parte.");
     out.println("Calendarios: make feed muestra las URL para suscribirte.");
   }
 

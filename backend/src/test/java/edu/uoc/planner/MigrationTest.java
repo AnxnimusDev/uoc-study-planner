@@ -47,7 +47,8 @@ class MigrationTest {
             "external_ref",
             "user_settings",
             "session_secret",
-            "plan_notice");
+            "plan_notice",
+            "task_progress");
   }
 
   @Test
