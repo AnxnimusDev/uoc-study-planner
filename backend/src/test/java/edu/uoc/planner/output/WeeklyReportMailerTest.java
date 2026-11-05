@@ -62,6 +62,19 @@ class WeeklyReportMailerTest {
     verify(sender, never()).send(any(MimeMessage.class));
   }
 
+  @Test
+  void refusesToSendWithoutAnSmtpServer() {
+    WeeklyReportMailer mailer =
+        new WeeklyReportMailer(
+            new JavaMailSenderImpl(),
+            pdf,
+            new OutputProperties(null, List.of("alumne@uoc.edu"), null));
+
+    assertThatThrownBy(mailer::requireConfigured)
+        .isInstanceOf(MailNotConfiguredException.class)
+        .hasMessageContaining("PLANNER_SMTP_HOST");
+  }
+
   private WeeklyReportMailer mailer(String... to) {
     return new WeeklyReportMailer(
         sender, pdf, new OutputProperties("planner@example.com", List.of(to), null));

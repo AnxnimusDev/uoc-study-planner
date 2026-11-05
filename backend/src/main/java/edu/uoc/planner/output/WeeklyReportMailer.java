@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +39,26 @@ public final class WeeklyReportMailer {
   }
 
   /**
-   * @throws MailNotConfiguredException without recipients
+   * @throws MailNotConfiguredException without an SMTP server or recipients
    */
-  public void send(WeeklyReport report) {
-    List<String> to = properties.recipients();
-    if (to.isEmpty()) {
+  public void requireConfigured() {
+    if (sender instanceof JavaMailSenderImpl smtp
+        && (smtp.getHost() == null || smtp.getHost().isBlank())) {
+      throw new MailNotConfiguredException(
+          "No hay servidor de correo: define PLANNER_SMTP_HOST en .env");
+    }
+    if (properties.recipients().isEmpty()) {
       throw new MailNotConfiguredException(
           "No hay destinatarios: define PLANNER_MAIL_TO en .env (direcciones separadas por comas)");
     }
+  }
+
+  /**
+   * @throws MailNotConfiguredException without an SMTP server or recipients
+   */
+  public void send(WeeklyReport report) {
+    requireConfigured();
+    List<String> to = properties.recipients();
     MimeMessage message = sender.createMimeMessage();
     try {
       MimeMessageHelper mail = new MimeMessageHelper(message, true, "UTF-8");

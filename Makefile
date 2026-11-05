@@ -7,7 +7,7 @@ export
 RAW_DIR := backend/src/test/resources/fixtures/raw
 FIXTURE_DIR := backend/src/test/resources/fixtures/canvas
 
-.PHONY: help up down test run login sync extract plan done left feed fixtures format
+.PHONY: help up down test run login sync extract plan done left report feed fixtures format
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -41,6 +41,9 @@ done: up ## Marca una tarea como hecha: make done TASK=7:t1
 
 left: up ## Indica lo que le queda a una tarea: make left TASK=7:t3 HOURS=1.5
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments="--planner.command=progress --planner.task=$(TASK) --planner.hours=$(HOURS)"
+
+report: up ## Sincroniza, extrae, planifica y envía el PDF semanal por correo
+	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=report
 
 feed: up ## Muestra las URL de los calendarios para suscribirte
 	cd backend && ./mvnw -q spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--planner.command=feed-url
