@@ -2,6 +2,9 @@ package edu.uoc.planner.output;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import edu.uoc.planner.planning.Notice;
+import java.time.Instant;
+import java.util.List;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -39,6 +42,27 @@ class WeeklyReportPdfTest {
         .contains("Entregas de la semana", "QÜESTIONARI 2 - Setmana 3", "viernes 30/10 23:59");
     assertThat(text).contains("Retos en riesgo", "Repte 1. Investigació", "faltan 4 h 30 min");
     assertThat(text).contains("Graba el vídeo dentro de la ventana.");
+  }
+
+  @Test
+  void showsARepeatedNoticeOnceWithItsNumberOfTasks() {
+    Instant from = Instant.parse("2026-10-26T08:00:00Z");
+    Notice video = new Notice("1:t9", Notice.Type.VIDEO_WINDOW, from, null, "Graba el vídeo.");
+    Notice sameVideo = new Notice("2:t9", Notice.Type.VIDEO_WINDOW, from, null, "Graba el vídeo.");
+    Notice margin = new Notice("3:t1", Notice.Type.MARGIN_SKIPPED, from, null, "Sin margen.");
+    WeeklyReport sample = OutputSamples.report();
+    WeeklyReport report =
+        new WeeklyReport(
+            sample.weekStart(),
+            sample.zone(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(video, margin, sameVideo),
+            List.of());
+
+    assertThat(WeeklyReportPdf.view(report).notices())
+        .containsExactly("Graba el vídeo. (2 tareas)", "Sin margen.");
   }
 
   @Test

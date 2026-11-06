@@ -207,7 +207,7 @@ Asigna cada subtarea a franjas libres entre su apertura y su plazo efectivo, pri
 - **ICS:** `GET /calendar/{token}.ics` (token aleatorio de 32 bytes); calendarios `UOC · Entregas` y `UOC · Plan de estudio`; UID estables `{tipo}-{id}@uoc-study-planner`.
 - **Recordatorios:** `reminders-bridge` (JSON por stdin/stdout); comandos `ensure-list`, `upsert-reminder`, `complete-reminder`, `delete-missing`, `request-access`; una lista por asignatura; el grupo "UOC" se crea a mano.
 - **PDF:** Thymeleaf → OpenHTMLtoPDF; semanal (7 días, entregas, retos en riesgo, checklist de formato, política de IA) y mensual.
-- **Correo:** Spring Mail por SMTP del alumno (contraseña de aplicación de Gmail); lunes y día 1; a la dirección UOC y a la personal.
+- **Correo:** Spring Mail por SMTP del alumno (contraseña de aplicación de Gmail); lunes y día 1; a la dirección UOC y a la personal. Hasta que haya tareas programadas, se envía a mano con `make report`: hace lo mismo que `make plan` y manda el PDF de los 7 días desde hoy, con las entregas pendientes de esos días, los retos en riesgo y las reglas de los retos con sesiones o entregas en ellos.
 
 ## 10. Modelo de datos
 

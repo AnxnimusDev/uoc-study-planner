@@ -2,6 +2,7 @@ package edu.uoc.planner.output;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import edu.uoc.planner.extraction.ChallengeSpec.AiPolicyLevel;
+import edu.uoc.planner.planning.Notice;
 import edu.uoc.planner.planning.PlannedSession;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,8 +14,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.W3CDom;
 import org.springframework.stereotype.Component;
@@ -127,8 +131,19 @@ public final class WeeklyReportPdf {
         days,
         deadlines,
         risks,
-        report.notices().stream().map(n -> n.message()).toList(),
+        notices(report),
         rules);
+  }
+
+  /** The same notice for several tasks (e.g. every identity video) is shown once. */
+  private static List<String> notices(WeeklyReport report) {
+    Map<String, Long> counts =
+        report.notices().stream()
+            .collect(
+                Collectors.groupingBy(Notice::message, LinkedHashMap::new, Collectors.counting()));
+    return counts.entrySet().stream()
+        .map(e -> e.getKey() + (e.getValue() > 1 ? " (" + e.getValue() + " tareas)" : ""))
+        .toList();
   }
 
   static String hours(Duration duration) {
