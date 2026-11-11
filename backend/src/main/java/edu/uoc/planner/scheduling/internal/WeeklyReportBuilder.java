@@ -29,12 +29,14 @@ final class WeeklyReportBuilder {
 
   /**
    * @param specs valid spec by challenge id; a challenge without one has no rules to show
+   * @param courseNames name of each course by code, shown instead of the code
    */
   static WeeklyReport build(
       Plan plan,
       ZoneId zone,
       List<StoredChallenge> challenges,
       Map<Long, ChallengeSpec> specs,
+      Map<String, String> courseNames,
       Instant now) {
     LocalDate today = now.atZone(zone).toLocalDate();
     Instant end = today.plusDays(7).atStartOfDay(zone).toInstant();
@@ -63,7 +65,14 @@ final class WeeklyReportBuilder {
             .map(c -> rules(c, specs.get(c.id())))
             .toList();
     return new WeeklyReport(
-        today, zone, sessions, deadlines, risks(plan, challenges), plan.notices(), rules);
+        today,
+        zone,
+        sessions,
+        deadlines,
+        risks(plan, challenges),
+        plan.notices(),
+        rules,
+        courseNames);
   }
 
   /** Weekly study time (ADR 0007) belongs to no challenge, so it is not among them. */

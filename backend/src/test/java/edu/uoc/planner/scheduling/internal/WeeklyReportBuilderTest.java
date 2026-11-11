@@ -42,6 +42,7 @@ class WeeklyReportBuilderTest {
     assertThat(report.weekStart()).isEqualTo(LocalDate.of(2026, 11, 5));
     assertThat(report.zone()).isEqualTo(MADRID);
     assertThat(report.sessions()).containsExactly(lastDay);
+    assertThat(report.courseNames()).containsEntry("05.557", "Àlgebra");
   }
 
   @Test
@@ -137,7 +138,8 @@ class WeeklyReportBuilderTest {
 
   private static WeeklyReport build(
       Plan plan, List<StoredChallenge> challenges, Map<Long, ChallengeSpec> specs) {
-    return WeeklyReportBuilder.build(plan, MADRID, challenges, specs, NOW);
+    return WeeklyReportBuilder.build(
+        plan, MADRID, challenges, specs, Map.of("05.557", "Àlgebra"), NOW);
   }
 
   private static Plan plan(List<PlannedSession> sessions, List<AtRiskTask> risks) {

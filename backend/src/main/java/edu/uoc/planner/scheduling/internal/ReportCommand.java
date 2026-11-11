@@ -123,6 +123,7 @@ final class ReportCommand implements ApplicationRunner, ExitCodeGenerator {
         pipelineReport.plan().zone(),
         challenges,
         valid,
+        catalog.selectedCourseNames(),
         clock.instant());
   }
 

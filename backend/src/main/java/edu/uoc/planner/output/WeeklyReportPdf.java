@@ -62,11 +62,14 @@ public final class WeeklyReportPdf {
   record View(
       String title,
       String week,
+      List<StatView> stats,
       List<DayView> days,
       List<DeadlineView> deadlines,
       List<RiskView> risks,
       List<String> notices,
       List<RulesView> rules) {}
+
+  record StatView(String value, String label) {}
 
   record DayView(String label, List<SessionView> sessions) {}
 
@@ -76,8 +79,16 @@ public final class WeeklyReportPdf {
 
   record RiskView(String title, String course, String missing) {}
 
+  /**
+   * @param tone {@code forbidden}, {@code limited}, {@code allowed} or {@code unknown}: the colour
+   */
   record RulesView(
-      String title, String course, String policy, String evidence, List<String> formats) {}
+      String title,
+      String course,
+      String policy,
+      String tone,
+      String evidence,
+      List<String> formats) {}
 
   static View view(WeeklyReport report) {
     ZoneId zone = report.zone();
@@ -95,7 +106,7 @@ public final class WeeklyReportPdf {
                           TIME.format(s.start().atZone(zone))
                               + "–"
                               + TIME.format(s.end().atZone(zone)),
-                          s.courseCode(),
+                          report.courseName(s.courseCode()),
                           s.title()))
               .toList();
       days.add(new DayView(capitalize(DAY.format(day)), sessions));
@@ -108,11 +119,19 @@ public final class WeeklyReportPdf {
             .sorted(Comparator.comparing(DeliverableDeadline::dueAt))
             .map(
                 d ->
-                    new DeadlineView(DUE.format(d.dueAt().atZone(zone)), d.courseCode(), d.title()))
+                    new DeadlineView(
+                        DUE.format(d.dueAt().atZone(zone)),
+                        report.courseName(d.courseCode()),
+                        d.title()))
             .toList();
     List<RiskView> risks =
         report.atRisk().stream()
-            .map(r -> new RiskView(r.title(), r.courseCode(), "faltan " + hours(r.missing())))
+            .map(
+                r ->
+                    new RiskView(
+                        r.title(),
+                        report.courseName(r.courseCode()),
+                        "faltan " + hours(r.missing())))
             .toList();
     List<RulesView> rules =
         report.rules().stream()
@@ -120,19 +139,38 @@ public final class WeeklyReportPdf {
                 r ->
                     new RulesView(
                         r.title(),
-                        r.courseCode(),
+                        report.courseName(r.courseCode()),
                         policy(r.aiPolicy()),
+                        tone(r.aiPolicy()),
                         r.evidence(),
                         r.formatRequirements()))
             .toList();
     return new View(
         "Plan de estudio",
         "Semana del " + WEEK.format(report.weekStart()),
+        stats(report, days, deadlines),
         days,
         deadlines,
         risks,
         notices(report),
         rules);
+  }
+
+  /** The four figures at the top: sessions, hours, deadlines and challenges at risk. */
+  private static List<StatView> stats(
+      WeeklyReport report, List<DayView> days, List<DeadlineView> deadlines) {
+    long sessions = days.stream().mapToLong(d -> d.sessions().size()).sum();
+    Duration study =
+        report.sessions().stream()
+            .map(PlannedSession::duration)
+            .reduce(Duration.ZERO, Duration::plus);
+    int risks = report.atRisk().size();
+    return List.of(
+        new StatView(String.valueOf(sessions), sessions == 1 ? "sesión" : "sesiones"),
+        new StatView(hours(study), "de estudio"),
+        new StatView(
+            String.valueOf(deadlines.size()), deadlines.size() == 1 ? "entrega" : "entregas"),
+        new StatView(String.valueOf(risks), risks == 1 ? "reto en riesgo" : "retos en riesgo"));
   }
 
   /** The same notice for several tasks (e.g. every identity video) is shown once. */
@@ -164,6 +202,18 @@ public final class WeeklyReportPdf {
       case LIMITED -> "IA permitida con límites";
       case ALLOWED -> "IA permitida";
       case NOT_STATED -> "El enunciado no menciona la IA";
+    };
+  }
+
+  private static String tone(AiPolicyLevel level) {
+    if (level == null) {
+      return "unknown";
+    }
+    return switch (level) {
+      case FORBIDDEN -> "forbidden";
+      case LIMITED -> "limited";
+      case ALLOWED -> "allowed";
+      case NOT_STATED -> "unknown";
     };
   }
 

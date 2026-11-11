@@ -99,6 +99,17 @@ class CanvasSyncIntegrationTest {
   }
 
   @Test
+  void namesEachSelectedCourseByItsCode() {
+    sync.sync();
+
+    assertThat(catalog.selectedCourseNames())
+        .containsEntry("05.557", "Àlgebra")
+        .containsEntry("20.439", "English B2.2")
+        .containsEntry("20.043", "Laboratori de prototipat")
+        .hasSize(6);
+  }
+
+  @Test
   void storesChallengesWithTheirWeights() {
     sync.sync();
 
