@@ -1,10 +1,12 @@
 package edu.uoc.planner.output;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import edu.uoc.planner.planning.Notice;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -31,7 +33,7 @@ class WeeklyReportPdfTest {
     assertThat(text).contains("Plan de estudio", "Semana del 26/10/2026");
     assertThat(text).contains("Lunes 26/10", "Martes 27/10", "Domingo 1/11");
     assertThat(text).contains("18:15–19:00", "Llegir la guia d'estudi setmanal del Repte 1");
-    assertThat(text).contains("Sin sesiones");
+    assertThat(text).contains("Miércoles 28/10 · sin sesiones");
   }
 
   @Test
@@ -63,6 +65,50 @@ class WeeklyReportPdfTest {
 
     assertThat(WeeklyReportPdf.view(report).notices())
         .containsExactly("Graba el vídeo. (2 tareas)", "Sin margen.");
+  }
+
+  @Test
+  void namesTheCourseInsteadOfShowingItsCode() throws Exception {
+    WeeklyReport sample = OutputSamples.report();
+    WeeklyReport report =
+        new WeeklyReport(
+            sample.weekStart(),
+            sample.zone(),
+            sample.sessions(),
+            sample.deadlines(),
+            sample.atRisk(),
+            sample.notices(),
+            sample.rules(),
+            Map.of("05.557", "Àlgebra"));
+
+    WeeklyReportPdf.View view = WeeklyReportPdf.view(report);
+
+    assertThat(view.days().getFirst().sessions().getFirst().course()).isEqualTo("Àlgebra");
+    assertThat(view.deadlines().getFirst().course()).isEqualTo("Àlgebra");
+    assertThat(view.rules().getFirst().course()).isEqualTo("Àlgebra");
+    // Without a name the code is still better than nothing.
+    assertThat(view.risks().getFirst().course()).isEqualTo("05.590");
+    assertThat(text(pdf.render(report))).contains("Àlgebra").doesNotContain("05.557");
+  }
+
+  @Test
+  void summarisesTheWeekAtTheTop() {
+    WeeklyReportPdf.View view = WeeklyReportPdf.view(OutputSamples.report());
+
+    assertThat(view.stats())
+        .extracting(WeeklyReportPdf.StatView::value, WeeklyReportPdf.StatView::label)
+        .containsExactly(
+            tuple("3", "sesiones"),
+            tuple("3 h 45 min", "de estudio"),
+            tuple("1", "entrega"),
+            tuple("1", "reto en riesgo"));
+  }
+
+  @Test
+  void givesEachAiPolicyItsOwnTone() {
+    WeeklyReportPdf.View view = WeeklyReportPdf.view(OutputSamples.report());
+
+    assertThat(view.rules().getFirst().tone()).isEqualTo("forbidden");
   }
 
   @Test

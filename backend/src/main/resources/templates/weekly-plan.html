@@ -3,70 +3,151 @@
 <head>
   <meta charset="UTF-8"/>
   <title th:text="${view.title}">Plan de estudio</title>
+  <!-- OpenHTMLtoPDF: CSS 2.1 plus a few CSS 3 properties; no custom properties, flex or grid.
+       Palette: navy #1b1a5e, blue #2b4acb, purple #6b3fc8, magenta #b0287a (risks). -->
   <style>
-    @page { size: A4; margin: 16mm 14mm; }
-    body { font-family: sans-serif; font-size: 10pt; color: #1a1a1a; }
-    h1 { font-size: 16pt; margin: 0; }
-    .week { color: #555; margin: 2pt 0 12pt 0; }
-    h2 { font-size: 11.5pt; border-bottom: 1px solid #999; padding-bottom: 2pt; margin: 14pt 0 6pt 0; }
-    h3 { font-size: 10pt; margin: 8pt 0 2pt 0; }
-    ul { margin: 0; padding-left: 12pt; }
-    li { margin: 1pt 0; }
-    .muted { color: #777; }
-    .time { font-weight: bold; }
-    .risk { color: #a11; }
-    .evidence { font-style: italic; color: #333; }
+    @page {
+      size: A4;
+      margin: 14mm 13mm 16mm 13mm;
+      @bottom-center {
+        content: "UOC Study Planner · página " counter(page) " de " counter(pages);
+        font-family: sans-serif; font-size: 7.5pt; color: #8a8db0;
+      }
+    }
+    body { font-family: sans-serif; font-size: 9.5pt; color: #1f1d3a; margin: 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td { vertical-align: top; }
+
+    .header { background-color: #1b1a5e; color: #ffffff; border-radius: 6pt; }
+    .header td { padding: 12pt 14pt; }
+    .header h1 { font-size: 19pt; margin: 0; color: #ffffff; }
+    .header .week { font-size: 10pt; color: #c9c4ff; margin: 3pt 0 0 0; }
+    .accent { height: 3pt; background-color: #6b3fc8; margin: 0 24pt 10pt 24pt;
+              border-radius: 0 0 3pt 3pt; }
+
+    .stats { border-collapse: separate; border-spacing: 5pt 0; margin: 0 -5pt 4pt -5pt; }
+    .stat { width: 25%; background-color: #eef1ff; border-radius: 5pt; padding: 7pt 8pt;
+            border-left: 3pt solid #2b4acb; }
+    .stat.purple { background-color: #f3eeff; border-left-color: #6b3fc8; }
+    .stat.risk { background-color: #fbeef5; border-left-color: #b0287a; }
+    .stat .value { font-size: 14pt; font-weight: bold; color: #1b1a5e; }
+    .stat.risk .value { color: #b0287a; }
+    .stat .label { font-size: 8pt; color: #5d5f80; }
+
+    h2 { font-size: 12pt; color: #1b1a5e; margin: 14pt 0 6pt 0; padding-bottom: 3pt;
+         border-bottom: 1.5pt solid #6b3fc8; }
+
+    .day { margin: 0 0 6pt 0; page-break-inside: avoid; border: 0.75pt solid #dcdff2;
+           border-radius: 5pt; }
+    .day-label { background-color: #2b4acb; color: #ffffff; font-weight: bold;
+                 padding: 4pt 8pt; border-radius: 4pt 4pt 0 0; }
+    .day-label.empty { background-color: #eef1ff; color: #5d5f80; border-radius: 4pt; }
+    .session td { padding: 4pt 8pt; border-top: 0.5pt solid #e6e8f6; }
+    .session.odd td { background-color: #f8f8ff; }
+    .time { width: 64pt; font-weight: bold; color: #2b4acb; white-space: nowrap; }
+    .course { font-size: 7.5pt; font-weight: bold; color: #6b3fc8; text-transform: uppercase;
+              letter-spacing: 0.3pt; }
+    .title { margin-top: 1pt; }
+
+    .list td { padding: 5pt 8pt; border-bottom: 0.5pt solid #e6e8f6; }
+    .when { width: 110pt; font-weight: bold; color: #6b3fc8; }
+    .missing { width: 90pt; text-align: right; font-weight: bold; color: #b0287a;
+               white-space: nowrap; }
+    .bar-purple { border-left: 3pt solid #6b3fc8; }
+    .bar-risk { border-left: 3pt solid #b0287a; }
+
+    .notice { background-color: #eef1ff; border-left: 3pt solid #2b4acb; padding: 5pt 8pt;
+              margin: 0 0 4pt 0; border-radius: 0 4pt 4pt 0; }
+    .muted { color: #8a8db0; font-style: italic; margin: 2pt 0; }
+
+    .rules { border: 0.75pt solid #dcdff2; border-radius: 5pt; padding: 7pt 9pt;
+             margin: 0 0 6pt 0; page-break-inside: avoid; }
+    .rules-title { font-weight: bold; color: #1b1a5e; }
+    .badge { font-size: 8pt; font-weight: bold; padding: 1.5pt 6pt; border-radius: 6pt;
+             color: #ffffff; background-color: #8a8db0; }
+    .badge.forbidden { background-color: #b0287a; }
+    .badge.limited { background-color: #6b3fc8; }
+    .badge.allowed { background-color: #2b4acb; }
+    .evidence { font-style: italic; color: #4a4c6e; margin: 5pt 0 0 0; padding-left: 7pt;
+                border-left: 2pt solid #c9c4ff; }
+    .formats { margin: 5pt 0 0 0; }
+    .formats div { margin: 2pt 0; }
+    .box { display: inline-block; width: 6.5pt; height: 6.5pt; border: 1pt solid #6b3fc8;
+           border-radius: 1.5pt; margin-right: 4pt; }
   </style>
 </head>
 <body>
-  <h1 th:text="${view.title}">Plan de estudio</h1>
-  <p class="week" th:text="${view.week}">Semana del 26/10/2026</p>
+  <table class="header"><tr><td>
+    <h1 th:text="${view.title}">Plan de estudio</h1>
+    <p class="week" th:text="${view.week}">Semana del 26/10/2026</p>
+  </td></tr></table>
+  <div class="accent"></div>
+
+  <table class="stats"><tr>
+    <td th:each="st, i : ${view.stats}"
+        th:class="${i.index == 3 ? 'stat risk' : (i.index == 2 ? 'stat purple' : 'stat')}">
+      <div class="value" th:text="${st.value}">3</div>
+      <div class="label" th:text="${st.label}">sesiones</div>
+    </td>
+  </tr></table>
 
   <h2>Sesiones</h2>
-  <div th:each="day : ${view.days}">
-    <h3 th:text="${day.label}">Lunes 26/10</h3>
-    <ul th:if="${!day.sessions.isEmpty()}">
-      <li th:each="s : ${day.sessions}">
-        <span class="time" th:text="${s.time}">18:15–19:00</span>
-        · <span th:text="${s.course}">05.557</span>
-        · <span th:text="${s.title}">Tarea</span>
-      </li>
-    </ul>
-    <p class="muted" th:if="${day.sessions.isEmpty()}">Sin sesiones</p>
+  <div class="day" th:each="day : ${view.days}">
+    <div th:class="${day.sessions.isEmpty() ? 'day-label empty' : 'day-label'}">
+      <span th:text="${day.label}">Lunes 26/10</span>
+      <span th:if="${day.sessions.isEmpty()}"> · sin sesiones</span>
+    </div>
+    <table th:if="${!day.sessions.isEmpty()}">
+      <tr th:each="s, i : ${day.sessions}" th:class="${i.odd ? 'session' : 'session odd'}">
+        <td class="time" th:text="${s.time}">18:15–19:00</td>
+        <td>
+          <div class="course" th:text="${s.course}">Àlgebra</div>
+          <div class="title" th:text="${s.title}">Tarea</div>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <h2>Entregas de la semana</h2>
-  <ul th:if="${!view.deadlines.isEmpty()}">
-    <li th:each="d : ${view.deadlines}">
-      <span class="time" th:text="${d.when}">viernes 30/10 23:59</span>
-      · <span th:text="${d.course}">05.557</span>
-      · <span th:text="${d.title}">Entrega</span>
-    </li>
-  </ul>
+  <table class="list" th:if="${!view.deadlines.isEmpty()}">
+    <tr th:each="d : ${view.deadlines}">
+      <td class="when bar-purple" th:text="${d.when}">viernes 30/10 23:59</td>
+      <td>
+        <div class="course" th:text="${d.course}">Àlgebra</div>
+        <div class="title" th:text="${d.title}">Entrega</div>
+      </td>
+    </tr>
+  </table>
   <p class="muted" th:if="${view.deadlines.isEmpty()}">Ninguna entrega esta semana.</p>
 
   <h2>Retos en riesgo</h2>
-  <ul th:if="${!view.risks.isEmpty()}">
-    <li class="risk" th:each="r : ${view.risks}"
-        th:text="${r.title + ' (' + r.course + '): ' + r.missing}">Reto: faltan 4 h</li>
-  </ul>
+  <table class="list" th:if="${!view.risks.isEmpty()}">
+    <tr th:each="r : ${view.risks}">
+      <td class="bar-risk">
+        <div class="course" th:text="${r.course}">Àlgebra</div>
+        <div class="title" th:text="${r.title}">Reto</div>
+      </td>
+      <td class="missing" th:text="${r.missing}">faltan 4 h</td>
+    </tr>
+  </table>
   <p class="muted" th:if="${view.risks.isEmpty()}">Todo cabe antes de los plazos.</p>
 
   <div th:if="${!view.notices.isEmpty()}">
     <h2>Avisos</h2>
-    <ul>
-      <li th:each="n : ${view.notices}" th:text="${n}">Aviso</li>
-    </ul>
+    <div class="notice" th:each="n : ${view.notices}" th:text="${n}">Aviso</div>
   </div>
 
   <h2>Política de IA y formato</h2>
-  <div th:each="c : ${view.rules}">
-    <h3 th:text="${c.title + ' (' + c.course + ')'}">Reto</h3>
-    <p><strong th:text="${c.policy}">IA no permitida</strong></p>
+  <div class="rules" th:each="c : ${view.rules}">
+    <div class="course" th:text="${c.course}">Àlgebra</div>
+    <div class="rules-title" th:text="${c.title}">Reto</div>
+    <p style="margin: 5pt 0 0 0;">
+      <span th:class="${'badge ' + c.tone}" th:text="${c.policy}">IA no permitida</span>
+    </p>
     <p class="evidence" th:if="${c.evidence != null}" th:text="${'«' + c.evidence + '»'}">Frase literal</p>
-    <ul th:if="${!c.formats.isEmpty()}">
-      <li th:each="f : ${c.formats}" th:text="${'[ ] ' + f}">Requisito</li>
-    </ul>
+    <div class="formats" th:if="${!c.formats.isEmpty()}">
+      <div th:each="f : ${c.formats}"><span class="box"></span><span th:text="${f}">Requisito</span></div>
+    </div>
   </div>
   <p class="muted" th:if="${view.rules.isEmpty()}">Sin retos esta semana.</p>
 </body>

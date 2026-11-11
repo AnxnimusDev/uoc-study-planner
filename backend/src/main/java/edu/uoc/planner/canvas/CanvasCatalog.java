@@ -94,6 +94,25 @@ public class CanvasCatalog {
             .list());
   }
 
+  /**
+   * Name of each selected course by code: "05.557 - Àlgebra - Aula 2" → "05.557" → "Àlgebra".
+   * Courses whose code has no name part are left out.
+   */
+  @Transactional(readOnly = true)
+  public Map<String, String> selectedCourseNames() {
+    Map<String, String> names = new HashMap<>();
+    jdbc.sql(
+            """
+            SELECT split_part(code, ' - ', 1) AS code, split_part(code, ' - ', 2) AS name
+            FROM course WHERE selected AND code LIKE '% - %'
+            """)
+        .query(
+            (rs, row) ->
+                names.putIfAbsent(rs.getString("code").strip(), rs.getString("name").strip()))
+        .list();
+    return Map.copyOf(names);
+  }
+
   /** A finished challenge ({@code DONE}) keeps its status. */
   @Transactional
   public void updateStatus(long challengeId, ChallengeStatus status) {

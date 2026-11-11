@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,6 +54,7 @@ class ReportCommandTest {
   @BeforeEach
   void setUp() {
     when(catalog.selectedChallenges()).thenReturn(List.of());
+    when(catalog.selectedCourseNames()).thenReturn(Map.of("05.557", "Àlgebra"));
     when(pipeline.run(any())).thenReturn(report(new SyncReport(List.of()), null));
   }
 
@@ -66,6 +68,7 @@ class ReportCommandTest {
     verify(mailer).send(sent.capture());
     assertThat(sent.getValue().weekStart()).isEqualTo(LocalDate.of(2026, 11, 5));
     assertThat(sent.getValue().sessions()).hasSize(1);
+    assertThat(sent.getValue().courseNames()).containsEntry("05.557", "Àlgebra");
     assertThat(output())
         .contains("Plan de la semana del 5/11 enviado por correo")
         .contains("1 sesión, 0 entregas y 0 retos en riesgo");
