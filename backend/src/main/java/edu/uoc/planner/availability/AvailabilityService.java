@@ -29,7 +29,7 @@ public class AvailabilityService {
    * @throws AvailabilityConfigException when the profile file is missing or inconsistent
    */
   public AvailabilityProfile profile() {
-    return AvailabilityProfileLoader.load(properties.file());
+    return AvailabilityProfileLoader.load(properties.path());
   }
 
   /**
