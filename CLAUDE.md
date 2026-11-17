@@ -60,8 +60,16 @@ make test        # tests del backend (mvn verify)
 make run         # arranca el backend en local (perfil dev)
 make login       # abre el navegador para iniciar sesión en la UOC y guarda la cookie
 make sync        # sincroniza Canvas con la sesión guardada
+make extract     # extrae con Claude los enunciados nuevos o modificados
+make plan        # sincroniza, extrae y planifica; muestra los próximos 7 días
+make done TASK=7:t1             # marca una tarea como hecha (ADR 0011)
+make left TASK=7:t3 HOURS=1.5   # indica lo que le queda a una tarea (ADR 0011)
+make report      # como make plan, y envía el PDF semanal por correo
+make feed        # muestra las URL de los calendarios (sirven mientras make run está arrancado)
 make fixtures    # anonimiza respuestas crudas de Canvas en fixtures de test
 ```
+
+Los comandos de `make` se lanzan desde la raíz del repositorio. `make help` los lista todos.
 
 Desde `backend/`: `./mvnw verify`, `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`,
 `./mvnw test -Dtest=NombreDelTest`.
@@ -112,4 +120,10 @@ Desde `backend/`: `./mvnw verify`, `./mvnw spring-boot:run -Dspring-boot.run.pro
 
 ## Estado actual
 
-Fase 0 (base del proyecto). Siguiente paso: ver `docs/kickoff.md`.
+Fase 1 (MVP) casi cerrada. Funcionan con datos reales la sincronización, la extracción, el plan
+voraz (ADR 0007–0010), el avance de tareas (ADR 0011) y el PDF semanal por correo (`make report`).
+La puerta G2 se dio por cumplida el 2026-11-02, aunque en sobrecarga quedan tareas en riesgo.
+
+Falta probar el feed ICS en un calendario real. Después, fase 2 (`docs/design.md`, sección 14):
+Timefold, check-ins, tareas programadas y Recordatorios. Hoy no hay ninguna tarea programada:
+todo se lanza a mano con `make`.
